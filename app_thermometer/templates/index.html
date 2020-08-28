@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body{
+            position: relative;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: #333;
+            color: #eee;
+        }
+
+        .box {
+            position: relative;
+            width:100%;
+        }
+
+        #mark {
+            font-size: 160px;
+            line-height: 160px;
+            font-weight: bold;
+            font-family: monospace;
+            position: absolute;
+            top: 30px;
+            right: 60px;
+        }
+
+        #photo-rgb img {
+            width:100vw;
+            height:75vw;
+        }
+
+        #photo-thermal img {
+            width:33vw;
+            height:33vw;
+        }
+
+        .lower-side {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        .data-text {
+            width: 66vw;
+            height: 16.5vw;
+            font-size: 5vw;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        @keyframes anim-rotation {
+            0%   {transform:rotate(0deg);}
+            50%   {transform:rotate(180deg);}
+            100% {transform:rotate(360deg);}
+        }
+
+        /*--- классы-статусы ---*/
+        .status-ok {color: #44EE44}
+        .status-high {color: #EE4444}
+        .status-working {color: #4444DD}
+
+        .rotating {
+            animation-name: anim-rotation;
+            animation-duration: 1000ms;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box">
+        <div id="mark" class="status-working">*</div>
+        <div id="photo-rgb">
+            <img src="{{ url_for('video_feed') }}">
+        </div>
+        <div class="lower-side">
+            <div class="data-side">
+                <div class="data-text"><div>Тепловизор:</div> <div class="status-ok">35.0 C°</div></div>
+                <div class="data-text"><div>Термодатчик:</div> <div class="status-high">37.9 C°</div></div>
+            </div>
+            <div id="photo-thermal">
+                <img src="{{ url_for('video_ir_feed') }}" class="fine">
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
