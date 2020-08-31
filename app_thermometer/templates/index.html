@@ -11,7 +11,7 @@
             padding: 0;
         }
 
-        body{
+        body {
             position: relative;
             height: 100vh;
             display: flex;
@@ -23,7 +23,7 @@
 
         .box {
             position: relative;
-            width:100%;
+            width: 100%;
         }
 
         #mark {
@@ -37,13 +37,13 @@
         }
 
         #photo-rgb img {
-            width:100vw;
-            height:75vw;
+            width: 100vw;
+            height: 75vw;
         }
 
         #photo-thermal img {
-            width:33vw;
-            height:33vw;
+            width: 33vw;
+            height: 33vw;
         }
 
         .lower-side {
@@ -63,15 +63,31 @@
         }
 
         @keyframes anim-rotation {
-            0%   {transform:rotate(0deg);}
-            50%   {transform:rotate(180deg);}
-            100% {transform:rotate(360deg);}
+            0% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(180deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /*--- классы-статусы ---*/
-        .status-ok {color: #44EE44}
-        .status-high {color: #EE4444}
-        .status-working {color: #4444DD}
+        .status-ok {
+            color: #44EE44
+        }
+
+        .status-high {
+            color: #EE4444
+        }
+
+        .status-working {
+            color: #4444DD
+        }
 
         .rotating {
             animation-name: anim-rotation;
@@ -87,17 +103,62 @@
         <div id="mark" class="status-working">*</div>
         <div id="photo-rgb">
             <img src="{{ url_for('video_feed') }}">
+<!--            <img src="">-->
         </div>
         <div class="lower-side">
             <div class="data-side">
-                <div class="data-text"><div>Тепловизор:</div> <div class="status-ok">35.0 C°</div></div>
-                <div class="data-text"><div>Термодатчик:</div> <div class="status-high">37.9 C°</div></div>
+                <div class="data-text">
+                    <div>Тепловизор:</div>
+                    <div id="T1" class="status-ok">35.0 C°</div>
+                </div>
+                <div class="data-text">
+                    <div>Термодатчик:</div>
+                    <div id="T2" class="status-high">38.9 C°</div>
+                </div>
             </div>
             <div id="photo-thermal">
                 <img src="{{ url_for('video_ir_feed') }}" class="fine">
+<!--                <img src="" class="fine">-->
             </div>
         </div>
     </div>
-</body>
+    <script type="text/javascript">
+        let thermo_url = "http://192.168.0.209:5000/get_temp"
+        // let thermo_url = "/get_temp"
+        let critrcal_temp = 37.9
 
+        function next_query() {
+            let request =  new XMLHttpRequest
+            request.withCredentials = false;
+            request.open("GET", thermo_url, true);
+            request.onreadystatechange = function () {
+                    if (request.readyState === 4) {
+                        let data = JSON.parse(request.responseText)
+                        thermo_update(data.T1, data.T2)
+                        setTimeout(next_query, 200)
+                    }
+            }
+            request.send()
+        }
+
+        function thermo_update(T1, T2) {
+            document.getElementById("T1").innerText = "" + T1 + " C°"
+            document.getElementById("T2").innerText = "" + T2 + " C°"
+
+            if (T1 > critrcal_temp) {
+                document.getElementById("T1").className="status-high"
+            } else {
+                document.getElementById("T1").className="status-ok"
+            }
+
+            if (T2 > critrcal_temp) {
+                document.getElementById("T2").className="status-high"
+            } else {
+                document.getElementById("T2").className="status-ok"
+            }
+        }
+
+        next_query()
+    </script>
+</body>
 </html>

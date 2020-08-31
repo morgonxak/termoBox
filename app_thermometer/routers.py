@@ -1,7 +1,12 @@
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, jsonify
 from app_thermometer import app
 
+@app.route('/')
+def index():
+    """Video streaming home page."""
+    return render_template('index.html')
 
+#Трансляция данных с тепловизора
 
 def gen_video_ir():
     while True:
@@ -15,6 +20,8 @@ def video_ir_feed():
 
 ######################################################################################################################
 
+#Трансляция изображения с RGB камеры
+
 def gen_video(camera):
     """Video streaming generator function."""
     while True:
@@ -25,6 +32,24 @@ def gen_video(camera):
 def video_feed():
     return Response(gen_video(app.config['camera_RGB']), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+######################################################################################################################
+#Отправка температуры
+
+
+import json
+import random
+@app.route('/get_temp', methods=['GET', 'POST'])
+def pull_IR_temp():
+    '''
+    Отправляет на веб страничку температуру с лица человека
+    :return:
+    '''
+    t1, t2 = app.config['processing'].get_temp_web()
+    d = {
+        "T1": t1,
+         "T2": t2
+         }
+    return str(json.dumps(d))
 
 
 if __name__ == '__main__':
