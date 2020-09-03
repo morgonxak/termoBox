@@ -10,8 +10,9 @@ def index():
 
 def gen_video_ir():
     while True:
-        frame = app.config['camera_IR'].getFrame_web()
-        yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        frame = app.config['camera_RGB'].get_IR_web()
+        if not frame is None:
+            yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
 @app.route('/video_ir_feed')
 def video_ir_feed():
@@ -44,11 +45,19 @@ def pull_IR_temp():
     Отправляет на веб страничку температуру с лица человека
     :return:
     '''
-    t1, t2 = app.config['processing'].get_temp_web()
+    t1, t2, mode = app.config['camera_RGB'].get_temp_web()
+    if mode:
+        mode = 1
+    else:
+        mode = 0
+
     d = {
         "T1": t1,
-         "T2": t2
+         "T2": t2,
+        "mode_seekThermal": mode
          }
+
+    print("json:", json)
     return str(json.dumps(d))
 
 

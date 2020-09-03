@@ -4,98 +4,12 @@
 
 <head>
     <meta charset="utf-8">
-    <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            position: relative;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background-color: #333;
-            color: #eee;
-        }
-
-        .box {
-            position: relative;
-            width: 100%;
-        }
-
-        #mark {
-            font-size: 160px;
-            line-height: 160px;
-            font-weight: bold;
-            font-family: monospace;
-            position: absolute;
-            top: 30px;
-            right: 60px;
-        }
-
-        #photo-rgb img {
-            width: 100vw;
-            height: 75vw;
-        }
-
-        #photo-thermal img {
-            width: 33vw;
-            height: 33vw;
-        }
-
-        .lower-side {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-        }
-
-        .data-text {
-            width: 66vw;
-            height: 16.5vw;
-            font-size: 5vw;
-            display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            align-items: center;
-        }
-
-        @keyframes anim-rotation {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            50% {
-                transform: rotate(180deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /*--- классы-статусы ---*/
-        .status-ok {
-            color: #44EE44
-        }
-
-        .status-high {
-            color: #EE4444
-        }
-
-        .status-working {
-            color: #4444DD
-        }
-
-        .rotating {
-            animation-name: anim-rotation;
-            animation-duration: 1000ms;
-            animation-iteration-count: infinite;
-            animation-timing-function: linear;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='mode_phone.css') }}">
+    <script type="text/javascript">
+        var thermo_url = "http://192.168.0.209:5000/get_temp"
+        let temp_min = 30.0
+        let temp_max = 40.0
+    </script>
 </head>
 
 <body>
@@ -103,62 +17,208 @@
         <div id="mark" class="status-working">*</div>
         <div id="photo-rgb">
             <img src="{{ url_for('video_feed') }}">
-<!--            <img src="">-->
-        </div>
-        <div class="lower-side">
-            <div class="data-side">
-                <div class="data-text">
-                    <div>Тепловизор:</div>
-                    <div id="T1" class="status-ok">35.0 C°</div>
-                </div>
-                <div class="data-text">
-                    <div>Термодатчик:</div>
-                    <div id="T2" class="status-high">38.9 C°</div>
-                </div>
-            </div>
             <div id="photo-thermal">
                 <img src="{{ url_for('video_ir_feed') }}" class="fine">
-<!--                <img src="" class="fine">-->
             </div>
         </div>
+        <div class="lower-side">
+            <div class="data-text L">
+                <div>Тепловизор:&nbsp;</div>
+                <div id="T1" class="status-ok">35.0 C°</div>
+            </div>
+            <div class="data-text R">
+                <div>Датчик:&nbsp;</div>
+                <div id="T2" class="status-high">38.9 C°</div>
+            </div>
+        </div>
+        <div class="critical-text">Установить температуру предупреждения:</div>
+        <div class="critical-settings">
+            <div id="set1" class="low">35.0</div>
+            <div id="set2" class="low">35.5</div>
+            <div id="set3" class="low">36.0</div>
+            <div id="set4" class="low">36.5</div>
+            <div id="set5" class="low">37.0</div>
+            <div id="set6" class="crit">37.5</div>
+            <div id="set7" class="high">38.0</div>
+            <div id="set8" class="high">38.5</div>
+            <div id="set9" class="high">39.0</div>
+            <div id="set0" class="high">39.5</div>
+        </div>
+        <audio loop src="{{ url_for('static', filename='alert.ogg') }}" id="alert_sound"></audio>
     </div>
     <script type="text/javascript">
-        let thermo_url = "http://192.168.0.209:5000/get_temp"
-        // let thermo_url = "/get_temp"
-        let critrcal_temp = 37.9
+        let critrcal_temp = 38.0
+        let messages = {
+            m0: "Готов измерять!",
+            m1: "Смотрите в камеру.",
+            m2: "Поднесите руку",
+            m_high: "Доступ запрещён!",
+            m_ok: "Добро пожаловать!",
+            m_bad: "Повторите измерение",
+        }
 
         function next_query() {
-            let request =  new XMLHttpRequest
+            let request = new XMLHttpRequest
             request.withCredentials = false;
-            request.open("GET", thermo_url, true);
+            request.open("GET", thermo_url + "?" + Date.now(), true);
             request.onreadystatechange = function () {
-                    if (request.readyState === 4) {
-                        let data = JSON.parse(request.responseText)
-                        thermo_update(data.T1, data.T2)
-                        setTimeout(next_query, 200)
-                    }
+                if (request.readyState === 4) {
+                    let data = JSON.parse(request.responseText)
+                    console.log(data)
+                    thermo_update(data.T1, data.T2, data.mode_seekThermal)
+                    setTimeout(next_query, 200)
+                }
             }
             request.send()
         }
 
-        function thermo_update(T1, T2) {
-            document.getElementById("T1").innerText = "" + T1 + " C°"
-            document.getElementById("T2").innerText = "" + T2 + " C°"
+        function sound_on() {
+            document.getElementById("alert_sound").play();
+        }
 
-            if (T1 > critrcal_temp) {
-                document.getElementById("T1").className="status-high"
-            } else {
-                document.getElementById("T1").className="status-ok"
-            }
+        function sound_off() {
+            document.getElementById("alert_sound").pause();
+        }
 
-            if (T2 > critrcal_temp) {
-                document.getElementById("T2").className="status-high"
+        function thermal_on() {
+            document.getElementById("photo-thermal").style.display = "block"
+        }
+
+        function thermal_off() {
+            document.getElementById("photo-thermal").style.display = "none"
+            document.getElementById("T1").innerText = "н/д"
+            document.getElementById("T2").innerText = "н/д"
+            document.getElementById("T1").className = "status-working"
+            document.getElementById("T2").className = "status-working"
+
+        }
+
+        function thermo_update(T1, T2, isEnabled) {
+            T1 = 1.0 * T1
+            T2 = 1.0 * T2
+            if (isEnabled) {
+
+                thermal_on()
+
+                if (T1 >= temp_min && T1 <= temp_max) {
+                    document.getElementById("T1").innerText = "" + (T1.toFixed(1)) + " C°"
+                    if (T1 >= critrcal_temp) {
+                        document.getElementById("T1").className = "status-high"
+                    } else {
+                        document.getElementById("T1").className = "status-ok"
+                    }
+
+                } else {
+                    document.getElementById("mark").innerText = messages['m_bad']
+                    document.getElementById("mark").className = "status-working"
+                    sound_off()
+                    return
+                }
+
+                if (T2 >= temp_min && T2 <= temp_max) {
+                    document.getElementById("T2").innerText = "" + (T2.toFixed(1)) + " C°"
+                    if (T2 >= critrcal_temp) {
+                        document.getElementById("T2").className = "status-high"
+                    } else {
+                        document.getElementById("T2").className = "status-ok"
+                    }
+                } else {
+                    document.getElementById("T2").innerText = "н/д"
+                    document.getElementById("T2").className = "status-working"
+                    document.getElementById("mark").innerText = messages['m2']
+                    document.getElementById("mark").className = "status-working"
+                    sound_off()
+                    return
+                }
+
+                if (Math.max(T1, T2) >= critrcal_temp) {
+                    document.getElementById("mark").innerText = messages['m_high']
+                    document.getElementById("mark").className = "status-high"
+                    sound_on()
+
+                } else {
+                    document.getElementById("mark").innerText = messages['m_ok']
+                    document.getElementById("mark").className = "status-ok"
+                    sound_off()
+                }
+
             } else {
-                document.getElementById("T2").className="status-ok"
+                document.getElementById("mark").innerText = messages['m0']
+                document.getElementById("mark").className = "status-working"
+                thermal_off()
+                sound_off()
             }
         }
 
+        let tmap = {
+            "Digit1": 35.0,
+            "Digit2": 35.5,
+            "Digit3": 36.0,
+            "Digit4": 36.5,
+            "Digit5": 37.0,
+            "Digit6": 37.5,
+            "Digit7": 38.0,
+            "Digit8": 38.5,
+            "Digit9": 39.0,
+            "Digit0": 39.5,
+        }
+
+        function changeCritTemp(critTemp) {
+            var temp
+            for (var i = 0; i <= 9; i++) {
+                temp = tmap[`Digit${i}`]
+                critrcal_temp = critTemp
+                if (critTemp > temp) {
+                    document.getElementById(`set${i}`).className = "low"
+                } else if (critTemp < temp) {
+                    document.getElementById(`set${i}`).className = "high"
+                } else {
+                    document.getElementById(`set${i}`).className = "crit"
+                }
+            }
+        }
+
+        var thermo_url_orig = "";
+        window.addEventListener('keydown', function (ev) {
+            if (ev.code == "KeyA") {
+                if (thermo_url_orig == "") { thermo_url_orig = thermo_url }
+                thermo_url = "./data/thermoA.json"
+            }
+            if (ev.code == "KeyS") {
+                if (thermo_url_orig == "") { thermo_url_orig = thermo_url }
+                thermo_url = "./data/thermoS.json"
+            }
+            if (ev.code == "KeyD") {
+                if (thermo_url_orig == "") { thermo_url_orig = thermo_url }
+                thermo_url = "./data/thermoD.json"
+            }
+            if (ev.code == "KeyF") {
+                if (thermo_url_orig == "") { thermo_url_orig = thermo_url }
+                thermo_url = "./data/thermoF.json"
+            }
+            if (ev.code == "KeyQ") {
+                if (thermo_url_orig != "") {
+                    thermo_url = thermo_url_orig
+                }
+            }
+
+            for (var i = 0; i <= 9; i++) {
+                if (ev.code == `Digit${i}`) {
+                    changeCritTemp(tmap[`Digit${i}`])
+                    return
+                }
+            }
+        })
+
+        for (var i = 0; i <= 9; i++) {
+            document.getElementById(`set${i}`).addEventListener('click', function () {
+                changeCritTemp(1.0 * this.innerText)
+            })
+        }
+
         next_query()
+        changeCritTemp(critrcal_temp)
     </script>
 </body>
+
 </html>

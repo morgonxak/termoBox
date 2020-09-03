@@ -68,31 +68,31 @@ class processing(threading.Thread):
 
     def get_temp_web(self):
 
-        tempPir = self.get_temp_pir()
+        #tempPir = self.get_temp_pir()
         temp_IR = self.camera_IR.getTempCenterPoint()
         if temp_IR is None:
             temp_IR = 0
 
-        if temp_IR is None:
-            temp_IR = 0
 
-        return round(temp_IR, 1), round(tempPir, 1)
+        return round(temp_IR, 1)
+
+
 
     def run(self):
         print("Start processing threading")
 
         print('Режим ожидания', '')
         lcd_rus.pull_lcd_text(1, 'Режим ожидания')
+
         prev_temp = self.get_temp_pir()
-        i = 0
         is_begining = True
-        while self.status_run:
+        i = 0
+        while True:
             cur_temp = self.get_temp_pir()
 
             if cur_temp - prev_temp > 0.6 and cur_temp > 24.00:
                 is_begining = False
-                lcd_rus.clear()
-                sleep(0.1)
+
                 lcd_rus.pull_lcd_text(1, "Начинаю измерение")
                 i = 0
                 start_temp = prev_temp
@@ -105,38 +105,34 @@ class processing(threading.Thread):
                     prev_temp = cur_temp
                     max_t = max(cur_temp, max_t)
                 if abs(cur_temp - start_temp) > 1:
-                    exact_t = max_t
+
                     if max_t <= 32.5:
                         max_t = max_t + 4.3 + abs(32.5 - max_t) / 1.23076923
                     else:
                         max_t = max_t + 4.3
 
                     if max_t >= 37.0:
-                        pass
-                        # text_with_warning("СТОП!", "  " + f"темпер.: {max_t:.1f}" + "\x99C")
-                        lcd_rus.pull_lcd_l(round(max_t, 1))
+                        lcd_rus.pull_lcd_r(round(max_t, 1))
                         lcd_rus.pull_lcd_text(1, "СТОП!")
+                        time.sleep(7)
                     else:
-                        pass
-                        # text_with_signal("Ваша температура", "  " + f"{max_t:.1f}" + "\x99C")
-                        lcd_rus.pull_lcd_l(round(max_t, 1))
+
+                        lcd_rus.pull_lcd_r(round(max_t, 1))
+                        lcd_rus.pull_lcd_text(1, "Проходи")
+                        time.sleep(7)
 
                     sleep(1)
-                    lcd_rus.clear()
-                    #sleep(0.1)
-                    #lcd_rus.pull_lcd_l(round(max_t, 1))
+                    #lcd_rus.clear()
+                    sleep(0.1)
+                    lcd_rus.pull_lcd_l(round(max_t, 1))
                 else:
-                    lcd_rus.clear()
+                    # lcd_rus.clear()
                     sleep(0.1)
                     lcd_rus.pull_lcd_text(1, "Готов измерять")
             prev_temp = cur_temp
             sleep(0.2)
             i += 1
             if i == 5 and not is_begining:
-                lcd_rus.clear()
+                # lcd_rus.clear()
                 lcd_rus.pull_lcd_text(1, "Готов измерять")
 
-
-
-        print("Stop processing threading")
-        self.stop_devices()

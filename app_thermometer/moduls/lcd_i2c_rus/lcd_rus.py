@@ -28,7 +28,7 @@ def pull_lcd_text(line, data):
     :return:
     '''
     p = subprocess.Popen("{} t {} {}".format(path_LCD, line, data), shell=True, stdout=subprocess.PIPE)
-    print("{} t {} {}".format(path_LCD, line, data))
+    #print("{} t {} {}".format(path_LCD, line, data))
 
 
 def pull_lcd_l(data):
@@ -38,7 +38,7 @@ def pull_lcd_l(data):
     :return:
     '''
     p = subprocess.Popen("{} l {}".format(path_LCD, data), shell=True, stdout=subprocess.PIPE)
-    print("{} l {}".format(path_LCD, data))
+    #print("{} l {}".format(path_LCD, data))
 
 def pull_lcd_r(data):
     '''
@@ -47,7 +47,7 @@ def pull_lcd_r(data):
     :return:
     '''
     p = subprocess.Popen("{} r {}".format(path_LCD, data), shell=True, stdout=subprocess.PIPE)
-    print("{} r {}".format(path_LCD, data))
+    #print("{} r {}".format(path_LCD, data))
 
 def clear():
     '''
@@ -55,7 +55,7 @@ def clear():
     :return:
     '''
     p = subprocess.Popen("{} c".format(path_LCD), shell=True, stdout=subprocess.PIPE)
-    print("{} c".format(path_LCD))
+    #print("{} c".format(path_LCD))
 
 if __name__ == '__main__':
     import time

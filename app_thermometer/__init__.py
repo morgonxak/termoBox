@@ -6,7 +6,7 @@ except BaseException as e:
     print("Error {}".format(e))
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static')
 
 from app_thermometer.moduls.lcd_i2c_rus import lcd_rus
 from app_thermometer.moduls.mlx90614.mlx90614 import MLX90614
@@ -39,14 +39,13 @@ except BaseException as e:
 #*************************************
 #
 
-
-app.config['camera_IR'] = Thermal()
+# app.config['camera_IR'] = Thermal()
 # app.config['camera_IR'].initialize()
 # app.config['camera_IR'].start()
 
-# app.config['camera_IR'] = None
+app.config['camera_IR'] = None
 #
-app.config['camera_RGB'] = VideoCamera(app.config['path_CascadeClassifier'], app.config['camera_IR'])
+app.config['camera_RGB'] = VideoCamera(app.config['path_CascadeClassifier'], app.config['camera_IR'], app.config['termo'])
 app.config['camera_RGB'].init()
 app.config['camera_RGB'].start()
 #
