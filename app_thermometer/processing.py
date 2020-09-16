@@ -1,10 +1,8 @@
-from app_thermometer import app
 import threading
 import time
 import cv2
-import numpy
 from app_thermometer.moduls.lcd_i2c_rus import lcd_rus
-from app_thermometer.moduls.mlx90614 import MLX90614
+from app_thermometer.moduls.measurements.mlx90614 import MLX90614
 from app_thermometer.moduls.camera import VideoCamera
 from app_thermometer.moduls.Seek_termal import Thermal
 from time import sleep
