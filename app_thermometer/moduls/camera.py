@@ -1,8 +1,6 @@
 import cv2
 import threading
 import numpy
-from app_thermometer.moduls.Seek_termal import Thermal
-from app_thermometer.moduls.lcd_i2c_rus import lcd_rus
 import time
 import os
 

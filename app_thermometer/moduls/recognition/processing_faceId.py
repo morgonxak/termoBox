@@ -4,10 +4,8 @@
 import threading
 import face_recognition
 import cv2
-import socket
 
-from app_face_recognition.modul.periphery import periphery
-from app_face_recognition.modul.dict_user import known_face_names
+from app_thermometer.moduls.recognition.dict_user import known_face_names
 
 
 class processing_faceid(threading.Thread):
@@ -91,22 +89,6 @@ class processing_faceid(threading.Thread):
             person_id = None
 
         return person_id
-
-
-    def open_door(self):
-        '''
-        Открывает дверь
-        :return:
-        '''
-        try:
-            sock = socket.socket()
-            sock.connect(('192.168.0.196', 9091))
-
-            sock.send(bytes('open', encoding='utf8'))
-            data = sock.recv(1024)
-            sock.close()
-        except BaseException as e:
-            print("error open door {}".format(e))
 
 
 

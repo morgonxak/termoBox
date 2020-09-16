@@ -9,4 +9,4 @@
 0. Запуск: pyhton run.py
 
 ## Схема подключения оборудования
-![alt text](https://github.com/morgonxak/door/blob/master/rs/scheme.png)
+![alt text](https://github.com/morgonxak/termoBox/blob/9_9_20/app_thermometer/rc/connection_diagram.png)
