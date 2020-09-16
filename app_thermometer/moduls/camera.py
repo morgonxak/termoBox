@@ -16,7 +16,7 @@ class VideoCamera(threading.Thread):
 
     def generator_frame(self):
         while self.status_run:
-            yield self.get_frame(), []
+            yield self.get_frame(), self.getBbox()
 
     def __del__(self):
         self.video.release()
@@ -36,8 +36,9 @@ class VideoCamera(threading.Thread):
         gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         faces = self.face_detector.detectMultiScale(gray, 1.3, 5)
 
-        for (x, y, w, h) in faces:
-            cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+        self.bbox = tuple(faces)
+        # for (x, y, w, h) in faces:
+        #     cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
 
     def run(self):
@@ -46,8 +47,10 @@ class VideoCamera(threading.Thread):
         while self.status_run:
             success, frame = self.video.read()
             if not success is None:
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                self.frame = numpy.copy(frame)
-                self.getFace()
+                self.frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                #self.frame = numpy.copy(frame)
+                if time.time() - self.oldTime > 1:
+                    self.getFace()
+                    self.oldTime = time.time()
 
 
