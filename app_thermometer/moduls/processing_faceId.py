@@ -79,11 +79,11 @@ class processing_faceid(threading.Thread):
 
         if res_predict_cvm == res_predict_knn:
             if not res_predict_cvm is None:
-
-                people = known_face_names.get(res_predict_cvm[0], None)
-                #print("Найден пользователь:", people)
-                if not people is None:
-                    return people
+                return res_predict_cvm[0]
+                # people = known_face_names.get(res_predict_cvm[0], None)
+                # #print("Найден пользователь:", people)
+                # if not people is None:
+                #     return people
                     # if not res_predict_cvm[0] in dict_res:
                     #     dict_res[res_predict_cvm[0]] = {}
                     #     dict_res[res_predict_cvm[0]]['name'] = people

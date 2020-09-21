@@ -3,14 +3,20 @@ import os
 import time
 import queue
 import pickle
-from processing_faceId import processing_faceid
+from app_thermometer.moduls.processing_faceId import processing_faceid
 import threading
-from amg88 import amg88
+from app_thermometer.moduls.amg88 import amg88
 import RPi.GPIO as GPIO
-from mlx90614 import MLX90614
+from app_thermometer.moduls.mlx90614 import MLX90614
 from smbus2 import SMBus
 import numpy
+from app_thermometer.moduls.dataBase import BD
 
+dict_connect_settings = {"database": "thermobox",
+                         "user": "pi",
+                         "password": "asm123",
+                         "host": "127.0.0.1",
+                          "port": "5432"}
 
 class camera(threading.Thread):
     '''
@@ -65,6 +71,8 @@ text = ''
 text_2 = ''
 flag_show_temp = True
 
+dataBase = BD(dict_connect_settings)
+
 def processing(t_teplovizor):
     '''
     Считывает значения с пирометра и выдает ответ на экран
@@ -83,6 +91,7 @@ def processing(t_teplovizor):
             return round(numpy.max(tempPir), 1), t_teplovizor
     return -1, t_teplovizor
 
+
 def valid(tempPir, t_teplovizor):
     '''
     Решения о состоянии здоровья
@@ -92,14 +101,14 @@ def valid(tempPir, t_teplovizor):
     '''
     if t_teplovizor >= 37.2 or tempPir >= 37.2:
         if tempPir == -1:
-            return 'See a doctor t1: {}'.format(t_teplovizor)
+            return True, 'See a doctor t1: {}'.format(t_teplovizor)
         else:
-            return 'See a doctor t1: {} t2: '.format(t_teplovizor, tempPir)
+            return True, 'See a doctor t1: {} t2: '.format(t_teplovizor, tempPir)
     else:
         if tempPir == -1:
-            return 'Things are good t1: {}'.format(t_teplovizor)
+            return False, 'Things are good t1: {}'.format(t_teplovizor)
         else:
-            return 'Things are good t1:{} t2:{}'.format(t_teplovizor, tempPir)
+            return False, 'Things are good t1:{} t2:{}'.format(t_teplovizor, tempPir)
 
 
 while True:
@@ -132,28 +141,32 @@ while True:
                     text = 'Wait for recognition'
 
                     time_recognition = time.time()
-                    dict_res = processing_recognition.predict_freme(fase_RGB_200_200)
+                    person_id = processing_recognition.predict_freme(fase_RGB_200_200)
                     print("time_recognition {}".format(time.time() - time_recognition))
 
-                    if not dict_res is None:
-                        print("dict_res", dict_res)
+                    if not person_id is None:
+                        print("dict_res", person_id)
 
                         t_teplovizor = teplovizor.getMaxTemp()
                         text = "Hello"
                         tempPir, t_teplovizor = processing(t_teplovizor)
-                        text_2 = valid(tempPir, t_teplovizor)
+                        flag_disease, text_2 = valid(tempPir, t_teplovizor)
+
+                        dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=person_id, temp_pirom=tempPir, temp_teplovizor=t_teplovizor)
 
                         time_clear_text = time.time()
                         flag_show_temp = False
 
                     else:
-                        print("dict_res_not", dict_res)
+                        print("dict_res_not", person_id)
 
                         t_teplovizor = teplovizor.getMaxTemp()
                         text = "no recognition"
 
                         tempPir, t_teplovizor = processing(t_teplovizor)
-                        text_2 = valid(tempPir, t_teplovizor)
+                        flag_disease, text_2 = valid(tempPir, t_teplovizor)
+
+                        dataBase.push_data_log(flag_disease, fase_RGB_200_200, temp_pirom=tempPir, temp_teplovizor=t_teplovizor)
 
                         time_clear_text = time.time()
                         flag_show_temp = False

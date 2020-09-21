@@ -3,11 +3,11 @@ import os
 import time
 import queue
 import pickle
-from processing_faceId import processing_faceid
+from app_thermometer.moduls.processing_faceId import processing_faceid
 import threading
-from amg88 import amg88
+from app_thermometer.moduls.amg88 import amg88
 import RPi.GPIO as GPIO
-from mlx90614 import MLX90614
+from app_thermometer.moduls.mlx90614 import MLX90614
 from smbus2 import SMBus
 import numpy
 
