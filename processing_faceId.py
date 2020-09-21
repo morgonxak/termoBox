@@ -3,14 +3,12 @@
 '''
 import threading
 import face_recognition
-import cv2
 
-from app_thermometer.moduls.recognition.dict_user import known_face_names
-
+from dict_user import known_face_names
 
 class processing_faceid(threading.Thread):
 
-    def __init__(self, queue, model_cvm, model_knn, face_detector, path_madel):
+    def __init__(self, queue, model_cvm, model_knn):
         '''
 
         :param queue: Задания
@@ -21,30 +19,10 @@ class processing_faceid(threading.Thread):
         :param door:
         '''
         super().__init__()
-        self.queue, self.model_cvm, self.model_knn, self.face_detector, self.path_madel= queue, model_cvm, model_knn, face_detector, path_madel
+        self.queue, self.model_cvm, self.model_knn = queue, model_cvm, model_knn
         self.dict_res = {}
 
 
-    def get_face_web(self):
-        return self.dict_res
-
-    def getFace(self, frame_RGB):
-        '''
-        Находим лицо и обрезаем
-        :param frame_RGB:
-        :param image_RGBD:
-        :return:
-        '''
-        gray = cv2.cvtColor(frame_RGB, cv2.COLOR_BGR2GRAY)
-        faces = self.face_detector.detectMultiScale(gray, 1.3, 5)
-        fases_200_200 = []
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame_RGB, (x, y), (x + w, y + h), (255, 0, 0), 2)
-            fase_RGB_200_200 = frame_RGB[y:y + w, x:x + h]
-
-            fases_200_200.append([fase_RGB_200_200, (x, y, w, h)])
-
-        return fases_200_200
 
     def get_descriptor_RGB(self, fase_RGB_200_200):
         '''
@@ -90,7 +68,30 @@ class processing_faceid(threading.Thread):
 
         return person_id
 
+    def predict_freme(self, fase_RGB):
+        # dict_res = {}
 
+        descriptor_fase_RGB = self.get_descriptor_RGB(fase_RGB)
+
+        res_predict_cvm = self.__predict_cvm(descriptor_fase_RGB)
+        res_predict_knn = self.__predict_knn(descriptor_fase_RGB)
+        print(res_predict_cvm, res_predict_knn, res_predict_cvm == res_predict_knn)
+
+        if res_predict_cvm == res_predict_knn:
+            if not res_predict_cvm is None:
+
+                people = known_face_names.get(res_predict_cvm[0], None)
+                #print("Найден пользователь:", people)
+                if not people is None:
+                    return people
+                    # if not res_predict_cvm[0] in dict_res:
+                    #     dict_res[res_predict_cvm[0]] = {}
+                    #     dict_res[res_predict_cvm[0]]['name'] = people
+                    # else:
+                    #     dict_res[res_predict_cvm[0]]['name'] = people
+
+        # self.dict_res = dict_res
+        return None
 
     def run(self):
         '''
@@ -99,41 +100,28 @@ class processing_faceid(threading.Thread):
         '''
 
         while True:
-            frame = self.queue.get()
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-            face_locations = self.getFace(frame)
+            fase_RGB = self.queue.get()
 
             dict_res = {}
-            for count, (fase_RGB_200_200, (x, y, w, h)) in enumerate(face_locations):
 
+            descriptor_fase_RGB = self.get_descriptor_RGB(fase_RGB)
 
-                descriptor_fase_RGB = self.get_descriptor_RGB(fase_RGB_200_200)
+            res_predict_cvm = self.__predict_cvm(descriptor_fase_RGB)
+            res_predict_knn = self.__predict_knn(descriptor_fase_RGB)
 
-                res_predict_cvm = self.__predict_cvm(descriptor_fase_RGB)
-                res_predict_knn = self.__predict_knn(descriptor_fase_RGB)
+            if res_predict_cvm == res_predict_knn:
+                if res_predict_cvm is None:
+                    pass
+                else:
+                    people = known_face_names.get(res_predict_cvm[0], None)
+                    print("Найден пользователь:", people)
+                    if not people is None:
 
-                if res_predict_cvm == res_predict_knn:
-                    if res_predict_cvm is None:
-                        pass
-                    else:
-                        people = known_face_names.get(res_predict_cvm[0], None)
-                        print("Найден пользователь:", people)
-                        if not people is None:
-
-                            #self.open_door()
-
-                            if not res_predict_cvm[0] in dict_res:
-                                dict_res[res_predict_cvm[0]] = {}
-                                dict_res[res_predict_cvm[0]]['bbox'] = [x, y, w, h]
-                                dict_res[res_predict_cvm[0]]['name'] = people
-                            else:
-                                dict_res[res_predict_cvm[0]]['bbox'] = [x, y, w, h]
-                                dict_res[res_predict_cvm[0]]['name'] = people
-
-
-                dict_res[str(count+1)] = {}
-                dict_res[str(count+1)]['bbox'] = [x, y, w, h]
-                dict_res[str(count+1)]['name'] = 'none'
+                        if not res_predict_cvm[0] in dict_res:
+                            dict_res[res_predict_cvm[0]] = {}
+                            dict_res[res_predict_cvm[0]]['name'] = people
+                        else:
+                            dict_res[res_predict_cvm[0]]['name'] = people
 
             self.dict_res = dict_res
 

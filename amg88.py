@@ -42,6 +42,14 @@ class amg88:
             temp = temp + 4.3
         return temp
 
+    def getMaxTemp(self):
+        '''
+        получить максимальную температуру
+        :return:
+        '''
+        matrix = self.getMaxrix()
+        return round(self.recalculation_of_temperatures(numpy.max(matrix)), 1)
+
     def test_1(self):
         '''
 

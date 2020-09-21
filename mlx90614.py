@@ -95,14 +95,12 @@ class MLX90614():
 
 if __name__ == '__main__':
     from smbus2 import SMBus
-    from lcd_rus import init, pull_lcd
     import time
 
-    init()
-    bus = SMBus(1)
-    test = MLX90614(bus)
+
+    test = MLX90614(SMBus(1))
     while 1:
-        pull_lcd(round(test.get_object_1(), 1), 0, "Тест")
+        test.get_object_1()
         time.sleep(0.1)
 
 
