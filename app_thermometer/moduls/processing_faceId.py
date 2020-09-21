@@ -4,7 +4,7 @@
 import threading
 import face_recognition
 
-from dict_user import known_face_names
+from app_thermometer.moduls.dict_user import known_face_names
 
 class processing_faceid(threading.Thread):
 
