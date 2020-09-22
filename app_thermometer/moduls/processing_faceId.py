@@ -1,14 +1,11 @@
 '''
 Модуль для проверки распознования миц и для дообучения CVM, Knn нейронных сетей
 '''
-import threading
 import face_recognition
 
-from app_thermometer.moduls.dict_user import known_face_names
+class processing_faceid:
 
-class processing_faceid(threading.Thread):
-
-    def __init__(self, queue, model_cvm, model_knn):
+    def __init__(self, model_cvm, model_knn):
         '''
 
         :param queue: Задания
@@ -18,10 +15,9 @@ class processing_faceid(threading.Thread):
         :param path_madel:
         :param door:
         '''
-        super().__init__()
-        self.queue, self.model_cvm, self.model_knn = queue, model_cvm, model_knn
-        self.dict_res = {}
 
+        self.model_cvm, self.model_knn = model_cvm, model_knn
+        self.dict_res = {}
 
 
     def get_descriptor_RGB(self, fase_RGB_200_200):
@@ -93,40 +89,6 @@ class processing_faceid(threading.Thread):
         # self.dict_res = dict_res
         return None
 
-    def run(self):
-        '''
-        Фходные данные Изображения в формате RGB
-        :return:
-        '''
-
-        while True:
-            fase_RGB = self.queue.get()
-
-            dict_res = {}
-
-            descriptor_fase_RGB = self.get_descriptor_RGB(fase_RGB)
-
-            res_predict_cvm = self.__predict_cvm(descriptor_fase_RGB)
-            res_predict_knn = self.__predict_knn(descriptor_fase_RGB)
-
-            if res_predict_cvm == res_predict_knn:
-                if res_predict_cvm is None:
-                    pass
-                else:
-                    people = known_face_names.get(res_predict_cvm[0], None)
-                    print("Найден пользователь:", people)
-                    if not people is None:
-
-                        if not res_predict_cvm[0] in dict_res:
-                            dict_res[res_predict_cvm[0]] = {}
-                            dict_res[res_predict_cvm[0]]['name'] = people
-                        else:
-                            dict_res[res_predict_cvm[0]]['name'] = people
-
-            self.dict_res = dict_res
-
-            # cv2.imshow("rgb", frame)
-            # cv2.waitKey(1)
 
 
 

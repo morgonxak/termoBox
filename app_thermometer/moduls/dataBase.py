@@ -71,8 +71,60 @@ class BD:
         )
         self.con.commit()
 
+    def get_people_name_by_person_id(self, person_id):
+        '''
+
+        :param person_id:
+        :return:
+        '''
+        try:
+            self.cur.execute("SELECT first_name from users WHERE person_id = '{}'".format(person_id))
+
+            rows = self.cur.fetchall()
+        except BaseException as e:
+            raise ValueError("Error get Users info: " + str(e))
+        else:
+            return rows[0][0]
+
+    def pull_users(self, person_id, surname, first_name, middle_name):
+        '''
+        Отправляем данные в базу
+        :param person_id:
+        :param surname:
+        :param first_name:
+        :param middle_name:
+        :return:
+        '''
+
+        self.cur.execute(
+            "INSERT INTO users (person_id, surname, first_name, middle_name, create_time) VALUES ('{}', '{}', '{}', '{}', '{}')".format(
+                person_id, surname, first_name, middle_name, str(datetime.datetime.now()))
+        )
+        self.con.commit()
+
+
+
+# def add_people():
+#     '''
+#     path_photo:
+#
+#     :param path_photo:
+#     :return:
+#     '''
+#
+#     print("dasd")
+#     for people in known_face_names:
+#         person_id = people
+#         surname = known_face_names[people]['lastname']
+#         first_name, middle_name = known_face_names[people]['initials'].split(' ')
+#         print(person_id, surname, first_name, middle_name)
+#         obj_BD.pull_users(person_id, surname, first_name, middle_name)
 
 if __name__ == '__main__':
     import datetime
     obj_BD = BD(dict_connect_settings)
-    obj_BD.push_data_log(temp_pirom=36.1)
+    #obj_BD.push_data_log(temp_pirom=36.1)
+    #add_people()
+    user = obj_BD.get_people_name_by_person_id('b9e1d2bc-ac4f-4b5b-bec3-fd586c8c3e49')
+    print(user)
+    #obj_BD.pull_users("00000000-0000-0000-0000-000000000000", 'Не распознан', 'Тест', "test")
