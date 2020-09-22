@@ -4,7 +4,7 @@ import threading
 import numpy
 import RPi.GPIO as GPIO
 
-from app_thermometer import face_detector, processing_recognition, teplovizor, dataBase, pirometr, valid
+from app_thermometer import face_detector, processing_recognition, teplovizor, dataBase, pirometr, valid, led_red_pin, led_green_pin, on_buzer
 
 frame_original = None
 font = cv2.FONT_HERSHEY_COMPLEX
@@ -51,9 +51,9 @@ class processing(threading.Thread):
 
                             if not person_id is None:
                                 print("dict_res", person_id)
-
+                                on_buzer()
                                 name_user = dataBase.get_people_name_by_person_id(person_id)
-                                text = "Привет {}".format(name_user)
+                                text = "Привет, {}".format(name_user)
                                 temp_tepl = teplovizor.getMaxTemp()
                                 text_2 = "Ваше температура {}".format(temp_tepl)
                                 text_3 = "Поднесите руку"
@@ -69,7 +69,7 @@ class processing(threading.Thread):
                             else:
                                 print("dict_res_not", person_id)
                                 temp_tepl = teplovizor.getMaxTemp()
-
+                                on_buzer()
                                 text = "не распознан"
                                 text_2 = "Ваше температура {}".format(temp_tepl)
                                 text_3 = "Поднесите руку"
@@ -135,6 +135,9 @@ while True:
                 text = 'Здравствуйте'
                 text_2 = 'Подайдите поближе'
                 text_3 = 'Для распознования'
+                GPIO.output(led_red_pin, GPIO.HIGH)
+                GPIO.output(led_green_pin, GPIO.HIGH)
+
                 tempPir = t_teplovizor = -1
                 flag_show_temp = True
                 time_clear_text = time.time()

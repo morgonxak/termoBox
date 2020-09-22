@@ -41,6 +41,26 @@ dataBase = BD(dict_connect_settings)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+#led
+led_red_pin = 23
+led_green_pin = 24
+
+GPIO.setup(led_red_pin, GPIO.OUT)
+GPIO.setup(led_green_pin, GPIO.OUT)
+
+GPIO.output(led_red_pin, GPIO.HIGH)
+GPIO.output(led_green_pin, GPIO.HIGH)
+########################################
+#Buzer
+GPIO.setup(25, GPIO.OUT)
+#######################
+
+def on_buzer():
+    p = GPIO.PWM(25, 1000)  # channel=12 frequency=50Hz
+    p.start(0)
+    p.ChangeDutyCycle(1)
+    time.sleep(0.3)
+    p.stop()
 
 def valid(tempPir, t_teplovizor):
     '''
@@ -50,11 +70,13 @@ def valid(tempPir, t_teplovizor):
     :return: текст сообщения
     '''
     if t_teplovizor >= 37.2 or tempPir >= 37.2:
+        GPIO.output(led_red_pin, GPIO.LOW)
         if tempPir == -1:
             return True, 'Обратитесь к врачу: {}'.format(t_teplovizor)
         else:
             return True, 'Обратитесь к врачу: {}: '.format(round(numpy.max([t_teplovizor, tempPir]), 1))
     else:
+        GPIO.output(led_green_pin, GPIO.LOW)
         if tempPir == -1:
             return False, 'Все хорошо, проходите: {}'.format(t_teplovizor)
         else:

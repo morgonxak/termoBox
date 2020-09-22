@@ -103,7 +103,6 @@ class BD:
         self.con.commit()
 
 
-
 # def add_people():
 #     '''
 #     path_photo:

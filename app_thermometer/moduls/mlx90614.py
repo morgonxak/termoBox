@@ -91,8 +91,6 @@ class MLX90614():
             yield self.temp_obj
 
 
-
-
 if __name__ == '__main__':
     from smbus2 import SMBus
     import time
