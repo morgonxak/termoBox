@@ -48,7 +48,8 @@ class amg88:
         :return:
         '''
         matrix = self.getMaxrix()
-        return round(self.recalculation_of_temperatures(numpy.max(matrix)), 1)
+        temp = numpy.max(matrix)
+        return temp, round(self.recalculation_of_temperatures(temp), 1)
 
     def test_1(self):
         '''

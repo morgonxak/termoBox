@@ -23,6 +23,8 @@ time_flag_timer = time.time()
 count_timer = 0
 tempPir = -1
 temp_tepl = -1
+temp_tepl_Raw = -1
+
 last_photo_recognition_people = {"personID": None, "phpto": None}
 
 class processing(threading.Thread):
@@ -33,7 +35,7 @@ class processing(threading.Thread):
         self.mode_run = True
 
     def run(self):
-        global x, y, w, h, frame_original, flag_show_temp, text, text_2, text_3, count_timer, time_flag_timer, flag_recognition, temp_tepl, last_photo_recognition_people, tempPir
+        global x, y, w, h, frame_original, flag_show_temp, text, text_2, text_3, count_timer, time_flag_timer, flag_recognition, temp_tepl, temp_tepl_Raw, last_photo_recognition_people, tempPir
         while self.mode_run:
 
             if not frame_original is None:
@@ -51,10 +53,10 @@ class processing(threading.Thread):
 
                             if not person_id is None:
                                 print("dict_res", person_id)
-                                on_buzer()
+
                                 name_user = dataBase.get_people_name_by_person_id(person_id)
                                 text = "Привет, {}".format(name_user)
-                                temp_tepl = teplovizor.getMaxTemp()
+                                temp_tepl_Raw, temp_tepl = teplovizor.getMaxTemp()
                                 text_2 = "Ваше температура {}".format(temp_tepl)
                                 text_3 = "Поднесите руку"
                                 count_timer = 6
@@ -68,8 +70,8 @@ class processing(threading.Thread):
 
                             else:
                                 print("dict_res_not", person_id)
-                                temp_tepl = teplovizor.getMaxTemp()
-                                on_buzer()
+                                temp_tepl_Raw, temp_tepl = teplovizor.getMaxTemp()
+
                                 text = "не распознан"
                                 text_2 = "Ваше температура {}".format(temp_tepl)
                                 text_3 = "Поднесите руку"
@@ -120,9 +122,8 @@ while True:
         else:
             if not flag_recognition:
                 flag_disease, text_3 = valid(tempPir, temp_tepl)
-
-                dataBase.push_data_log(flag_disease, last_photo_recognition_people['photo'],  person_id=last_photo_recognition_people['personID'], temp_pirom=tempPir, temp_teplovizor=temp_tepl)
-
+                on_buzer(True)
+                dataBase.push_data_log(flag_disease, last_photo_recognition_people['photo'],  person_id=last_photo_recognition_people['personID'], temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_teplovizor=temp_tepl_Raw)
 
             flag_recognition = True
 
@@ -143,7 +144,6 @@ while True:
                 time_clear_text = time.time()
 
         cv2.imshow("window", frame)
-
 
     key = cv2.waitKey(1)
     if key == ord('q'):

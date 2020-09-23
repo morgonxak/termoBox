@@ -54,13 +54,29 @@ GPIO.output(led_green_pin, GPIO.HIGH)
 #Buzer
 GPIO.setup(25, GPIO.OUT)
 #######################
+p = GPIO.PWM(25, 1000)  # channel=12 frequency=50Hz
 
-def on_buzer():
-    p = GPIO.PWM(25, 1000)  # channel=12 frequency=50Hz
-    p.start(0)
-    p.ChangeDutyCycle(1)
-    time.sleep(0.3)
-    p.stop()
+def on_buzer(mode):
+    '''
+    РАбота с пещалкой
+    :param mode: True - ПРоходит  False - НЕ пройдет
+
+    :return:
+    '''
+    global p
+    print("mode {}".format(mode))
+    if mode:
+        p.start(0)
+        p.ChangeDutyCycle(50)
+        time.sleep(0.3)
+        p.ChangeDutyCycle(0)
+    else:
+        for _ in range(2):
+            p.ChangeDutyCycle(50)
+            time.sleep(1)
+            p.ChangeDutyCycle(0)
+            time.sleep(0.5)
+
 
 def valid(tempPir, t_teplovizor):
     '''
