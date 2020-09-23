@@ -16,7 +16,6 @@
 0. pyhton 3.7
 0. cmake
 
-**mlx90614** - безконтактный датчик температуры
 ## Установка:
 0. mkdir thermoBox && cd thermoBox
 0. python3 -m venv .env
