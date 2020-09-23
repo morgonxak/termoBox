@@ -44,6 +44,7 @@ GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 #led
 led_red_pin = 23
 led_green_pin = 24
+pinBuzer = 25
 
 GPIO.setup(led_red_pin, GPIO.OUT)
 GPIO.setup(led_green_pin, GPIO.OUT)
@@ -52,9 +53,9 @@ GPIO.output(led_red_pin, GPIO.HIGH)
 GPIO.output(led_green_pin, GPIO.HIGH)
 ########################################
 #Buzer
-GPIO.setup(25, GPIO.OUT)
+GPIO.setup(pinBuzer, GPIO.OUT)
 #######################
-p = GPIO.PWM(25, 1000)  # channel=12 frequency=50Hz
+p = GPIO.PWM(pinBuzer, 1000)  # channel=12 frequency=50Hz
 
 def on_buzer(mode):
     '''

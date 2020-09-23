@@ -1,0 +1,146 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 11.7 (Raspbian 11.7-0+deb10u1)
+-- Dumped by pg_dump version 11.7 (Raspbian 11.7-0+deb10u1)
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: log; Type: TABLE; Schema: public; Owner: pi
+--
+
+CREATE TABLE public.log (
+    id integer NOT NULL,
+    person_id uuid,
+    temp_teplovizor double precision,
+    temp_pirometr double precision,
+    raw_teplovizor double precision,
+    raw_pirometr double precision,
+    data_time timestamp without time zone,
+    name_image text
+);
+
+
+ALTER TABLE public.log OWNER TO pi;
+
+--
+-- Name: log_id_seq; Type: SEQUENCE; Schema: public; Owner: pi
+--
+
+CREATE SEQUENCE public.log_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.log_id_seq OWNER TO pi;
+
+--
+-- Name: log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: pi
+--
+
+ALTER SEQUENCE public.log_id_seq OWNED BY public.log.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: pi
+--
+
+CREATE TABLE public.users (
+    person_id uuid NOT NULL,
+    surname text,
+    first_name text,
+    middle_name text,
+    create_time time without time zone,
+    del_time time without time zone
+);
+
+
+ALTER TABLE public.users OWNER TO pi;
+
+--
+-- Name: users_create_time_seq; Type: SEQUENCE; Schema: public; Owner: pi
+--
+
+CREATE SEQUENCE public.users_create_time_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.users_create_time_seq OWNER TO pi;
+
+--
+-- Name: log id; Type: DEFAULT; Schema: public; Owner: pi
+--
+
+ALTER TABLE ONLY public.log ALTER COLUMN id SET DEFAULT nextval('public.log_id_seq'::regclass);
+
+
+--
+-- Data for Name: log; Type: TABLE DATA; Schema: public; Owner: pi
+--
+
+COPY public.log (id, person_id, temp_teplovizor, temp_pirometr, raw_teplovizor, raw_pirometr, data_time, name_image) FROM stdin;
+\.
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: pi
+--
+
+
+--
+-- Name: log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: pi
+--
+
+SELECT pg_catalog.setval('public.log_id_seq', 229, true);
+
+
+--
+-- Name: users_create_time_seq; Type: SEQUENCE SET; Schema: public; Owner: pi
+--
+
+SELECT pg_catalog.setval('public.users_create_time_seq', 1, false);
+
+
+--
+-- Name: log log_pk; Type: CONSTRAINT; Schema: public; Owner: pi
+--
+
+ALTER TABLE ONLY public.log
+    ADD CONSTRAINT log_pk PRIMARY KEY (id);
+
+
+--
+-- Name: users users_pk; Type: CONSTRAINT; Schema: public; Owner: pi
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pk PRIMARY KEY (person_id);
+
+
+--
+-- PostgreSQL database dump complete
+--
+
