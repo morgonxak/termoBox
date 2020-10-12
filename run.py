@@ -433,7 +433,7 @@ if __name__ == "__main__":
                         if flag_id_on:
                             logging.info("dataBase id_person= {} : {}".format(id_person, flag_disease))
                         #on_buzer(True)
-                        #dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_temp_tepl, raw_teplovizor=temp_tepl_Raw)
+                        dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_temp_tepl, raw_teplovizor=temp_tepl_Raw)
                         if (not flag_disease) and flag_id_on: # если человек и температ, то действие
                             if_on = True # при выполнении проверки на всё
                             #print(if_on)
