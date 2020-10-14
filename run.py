@@ -15,7 +15,7 @@ import logging ## лог
 
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Pool, Process , Queue
-if_test_wimdovs = False
+if_test_wimdovs = False # тест на винде?
 
 if if_test_wimdovs:
     face_detector = cv2.CascadeClassifier(r'C:\Users\Admin\Desktop\python\haarcascade_frontalface_default.xml')
@@ -26,42 +26,34 @@ else:
     from app_thermometer import face_detector, processing_recognition, teplovizor, dataBase, pirometr, valid, led_red_pin, led_green_pin, on_buzer
 
 
-def Id_to_face(fase_RGB_200_200, return_Id_to_face):
+def Id_to_face(fase_RGB_200_200, return_Id_to_face): # поиск по фото
     id_person = -1
     if not if_test_wimdovs:
         id_person = processing_recognition.predict_freme(fase_RGB_200_200)
     #if return_Id_to_face.get() == -1 :
     return_Id_to_face.put(id_person)
 
-#if __name__ != '__main__': # ????????????? 
-
 def led_off(led_pin,on = False): # выкл свет 
     #print("{}, {}".format(led_pin,on)) 
     if on == True:
         if if_test_wimdovs:
-            #print("{} GPIO.HIGH".format(led_pin))
-            print("{} GPIO.HIGH".format(led_pin))
+            print("{} GPIO.LOW".format(led_pin))
         else:
             GPIO.output(led_pin, GPIO.LOW) # выкл HIGH
     else:
-        
         if if_test_wimdovs:
-            print("{} GPIO.LOW".format(led_pin))
-            #print("{} GPIO.HIGH".format(led_pin))
+            print("{} GPIO.HIGH".format(led_pin))
         else:
             GPIO.output(led_pin, GPIO.HIGH) # выкл LOW
         
 def led_all_off(on = False): # выкл свет  
-    #print("led_all_off")
     led_off(led_red_pin,on)
     led_off(led_green_pin,on)      
 
 def led_red(on): # вкл/выкл свет
-
     led_off(led_red_pin,on)  
 
 def led_green(on): # вкл/выкл свет
-
     led_off(led_green_pin,on) 
 
 
@@ -88,25 +80,12 @@ def Str_ID(id_person):# текст на  id
     if id_person == None:
         temp_text =  "Не распознан"
         temp_text2 = " "
-        #led_all_mig()
-        #led_green(False)
-        #led_red(True)
-        #led_red_mig()
     elif id_person == -1:
         temp_text = "Подойдите ближе" #"" #
         temp_text2 = " для распознования"
-        #GPIO.output(led_red_pin, GPIO.HIGH)
-        
-        #led_green(False)
-        #led_red(False)
-        
     else :
         temp_text = "Привет, {}".format(dataBase.get_people_name_by_person_id(id_person))
         temp_text2 =  " "
-        #GPIO.output(led_green_pin, GPIO.HIGH)
-        #led_red(False)
-        #led_green(True)
-        #led_green_mig()
     return temp_text, temp_text2
 
 
@@ -117,37 +96,17 @@ def valid(tempPir, t_teplovizor):
     :param t_teplovizor:
     :return: текст сообщения
     '''
-    
-    #print("valid")
     if t_teplovizor == 0 or tempPir == 0:
         return False, 'Нет всей информации по температуре. '    
-    
+
     tepl = round(numpy.max([t_teplovizor, tempPir]), 1)
-    if tepl >= 37.2:
-        #led_red_mig(3)        
+    if tepl >= 37.2:       
         led_green(False)
         led_red(True)
         return True, 'Обратитесь к врачу: {}'.format(tepl)
     else:
-        return False, 'Все хорошо, проходите: {}'.format(t_teplovizor)
-    
-    """
-    if t_teplovizor >= 37.2 or tempPir >= 37.2:
-        #GPIO.output(led_red_pin, GPIO.LOW)# вкл
-        led_red_mig(3)
-        if tempPir <= 0:
-            return True, 'Обратитесь к врачу: {}'.format(t_teplovizor)
-        else:
-            return True, 'Обратитесь к врачу: {}: '.format(round(numpy.max([t_teplovizor, tempPir]), 1))
-    else:
-        #GPIO.output(led_green_pin, GPIO.LOW)
-        
-        if tempPir <= 0:
-            return False, 'Все хорошо, проходите: {}'.format(t_teplovizor)
-        else:
-            return False, 'Все хорошо, проходите: {}'.format(round(numpy.max([t_teplovizor, tempPir]), 1))
-    """
-    
+        return False, 'Все хорошо,проходите: {}'.format(t_teplovizor)
+      
 def valid_text(tempPir, t_teplovizor):
     iff, text = valid(tempPir, t_teplovizor)
     return text    
@@ -156,18 +115,19 @@ def valid_var(tempPir, t_teplovizor):
     iff, text = valid(tempPir, t_teplovizor)
     return iff    
 
-def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0):
+def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0): # цифры на  tepl
     temp_tepl_Raw = temp_tepl = tempPir = 0
     try:
         temp_tepl_Raw, temp_tepl = teplovizor.getMaxTemp()
         if GPIO.input(18) == False:#у нас есть отжатая кнопа?  
             tempPir = round(pirometr.get_object_1(),1)
+        else:
+            led_red(False)
     except: # Queue.Empty
         pass
     return temp_tepl_Raw, temp_tepl, tempPir
 
 def Str_teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0):# текст на  tepl
-    #temp_tepl_Raw, temp_tepl, tempPir = teplo()
     temp_text_telo = "Ваша температура {}".format(temp_tepl)  
     #if (32 < tempPir < 45):
     if tempPir != 0 :   
@@ -177,7 +137,7 @@ def Str_teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0):# текст на  tepl
     temp_text_tepl = valid_text(temp_tepl, tempPir)
     return temp_text_telo, temp_text_Pir, temp_text_tepl
 
-def faces_x_y(frame, x , y , w , h): #, id_hread, return_Id_to_face): # ф-я для поиска границ
+def faces_x_y(frame, x , y , w , h): # ф-я для поиска границ
     x = y = w = h = 0
     x1 = y1 = w1 = h1 = 0
     if not frame is None:
@@ -188,59 +148,71 @@ def faces_x_y(frame, x , y , w , h): #, id_hread, return_Id_to_face): # ф-я д
     return x , y , w , h #, id_hread 
 import tkinter as tk
 
-def cv2_putText_flag_id_on(flag_id_on,thickness=4):##вывод v/x на экран
+def cv2_putText_flag_id_on(flag_id_on, q_w, q_h, r_w, thickness=4):##вывод v/x на экран
     if flag_id_on: #если нашли человека
         cv2.putText(frame, "V", (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, r_w, (0, 255, 0), thickness, cv2.LINE_AA)
     else:
         cv2.putText(frame, "X", (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, r_w, (0, 0, 255), thickness, cv2.LINE_AA) 
 
 
-def cv2_putText(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, height=0, width=0): # вывод текста на экран
-    channels = 0
-    thickness = 1
-    #height = width =  0 ## для рвзмера экрана 
-    """
-    
-    s = Gdk.Screen.get_default()
-    """
-    
-    if height + width == 0:
-        #height, width, channels = frame.shape # по изображению
-        #height, width, channels = frame.size # по изображению
-        #height, width = frame.shape[:2]
-        #width, height = s.get_width(), s.get_height() # по экрану?
-        #width, height = desktop.width(), desktop.height() # по экрану?
+def cv2_rectangle_min_W_H(height, width):# размер минимальных границ
+    w = h = 0
+    if height + width != 0:
+        d=2
+        w = h = round(numpy.max([height/d, width/d]), 0) 
+
+    if w <= 2 or h <= 2:
+        w = h = 150
         
+        
+    return w, h
+
+def cv2_height_width(frame, height=0, width=0):# размер скрина
+    #height, width = 626, 537 #зармеры экрана
+    if height + width == 0:
         height = numpy.size(frame, 0)
         width = numpy.size(frame, 1)
-        
-        #root = tk.Tk()
-        #width, height= root.winfo_screenwidth(), root.winfo_screenheight()
+   
+    return height, width
 
-    
-    #print("width = {}".format(width))  
-    #print("height = {}".format(height))     
+def cv2_putText_x_y(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h): # вывод имя и текста на экран
+    if x + w + y + h > 0:
+        color_text =(0, 114, 255) #(33, 47, 252) #(255, 150, 0) # цвет text
+        id_person1 = id_person
         
-    hei_n= height - (100) # (30+25+15+20+10) *(thickness) 
-    cv2.rectangle(frame, (0, height), (width, hei_n), (255, 255, 255), -1)
+        if id_person1 ==-1: id_person1 =  None
+        
+        TStr_ID1, TStr_ID2  = Str_ID(id_person1)
+        if TStr_ID2 !=" ": TStr_ID1 = " "
+        temp_text_telo, temp_text_Pir, temp_text_tepl = Str_teplo(temp_tepl_Raw, temp_tepl, tempPir)# получаем текст на тепл
+        
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
+        r_w = w/400
+        if TStr_ID1 !=" ":
+            #cv2.rectangle(frame, (0, x, y-10), (30, 30*len(TStr_ID1)), (255, 255, 255), -1)
     
-    TStr_ID1, TStr_ID2  = Str_ID(id_person)
+            cv2.putText(frame, TStr_ID1, (x, y-10), font, r_w, (color_text), 2)
+        if len(temp_text_tepl) > 20:
+            temp_text_tepl1 = temp_text_tepl[:20] 
+            temp_text_tepl2 = temp_text_tepl[20:]
+            cv2.putText(frame, temp_text_tepl1, (x, y + h + 30), font, r_w, (color_text), 2)
+            cv2.putText(frame, temp_text_tepl2, (x, y + h + 60), font, r_w, (color_text), 2)
+        else:
+            cv2.putText(frame, temp_text_tepl, (x, y + h + 30), font, r_w, (color_text), 2)
+
+def cv2_putText_x_y_time_out_(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h, time_out_, if_save_time):  # вывод знака и  таймера + cv2_putText_x_y
+    if x + w + y + h >0 and time_out_ > 0:
+
+        r_w = w/200#w/(23) #w/23 / 21.5
+        q_h =y+60 #int(y+(h/2 + r_w*(10.5))) #y+h-10
+        q_w =x+10 #int(x+(w/2 - r_w*(9.7)))
+        if  1.0 < time_out_ and (not if_save_time): # выводим время
+            cv2.putText(frame, "{}".format(int(time_out_)), (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, r_w, (0, 255, 0), thickness_fase, cv2.LINE_AA)
+        elif time_out_ <= 1.0 or (if_save_time): # выводим распазнание # 0.5 <
+            cv2_putText_flag_id_on(flag_id_on, q_w, q_h, r_w, thickness_fase)#вывод v/x на экран
     
-    temp_text_telo, temp_text_Pir, temp_text_tepl = Str_teplo(temp_tepl_Raw, temp_tepl, tempPir)# получаем текст на тепло
-    
-    hei = hei_n + 20*(thickness)
-    #cv2.putText(frame, Str_ID(id_person),   (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    cv2.putText(frame, TStr_ID1,       (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    hei += 20*(thickness)
-    cv2.putText(frame, TStr_ID2,       (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    hei += 20*(thickness)
-    cv2.putText(frame, temp_text_telo, (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    hei += 15*(thickness)
-    cv2.putText(frame, temp_text_Pir,  (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    hei += 20*(thickness)
-    cv2.putText(frame, temp_text_tepl, (5, hei),   font, 0.4*thickness, (0, 0, 0), thickness, cv2.LINE_AA)##
-    hei += 10*(thickness)
-    
+        cv2_putText_x_y(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h)
+
 
 def clearQueue(q): # обнуление очереди (чтоб без матов(часть костыля #1))
     try:
@@ -248,6 +220,23 @@ def clearQueue(q): # обнуление очереди (чтоб без мато
             q.get_nowait()
     except: # Queue.Empty
         pass
+    
+def frame_image(If_Test_Foto, ret , frame, image): # или скрин или фото от If_Test_Foto
+    del frame #переменная под фрейм с камеры
+    frame = None #переменная под фрейм с камеры
+    if not If_Test_Foto :
+        ret , frame = cap.read()               
+        if not frame is None:
+            frame = cv2.flip(frame,1) # ореентация камеры
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) 
+            #frame = frame[:, 185:455]
+        else: 
+            logging.error("except: frame is None")                       
+            raise Exception("frame is None")
+    else:
+        frame = numpy.copy((image))
+    return frame 
+    
          
 # True False
 If_Test_Foto = False # тест по фото
@@ -258,23 +247,26 @@ thickness_fase = 4 # размер символов в квадрате
 
 cap = None
 if not If_Test_Foto :
-    cap = cv2.VideoCapture(0) # подкл к камере
+    cap = cv2.VideoCapture(0) # подкл к камере 
     #height, width, channels = img.shape
 font = cv2.FONT_HERSHEY_COMPLEX # фон
-cv2.namedWindow("window", cv2.WND_PROP_FULLSCREEN) 
-cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+if not if_test_wimdovs:
+    cv2.namedWindow("window", cv2.WND_PROP_FULLSCREEN) 
+    cv2.setWindowProperty("window", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    
+image = None   
+if If_Test_Foto :
+    image = cv2.imread("./Test.jpg")    
+frame = None #переменная под фрейм с камеры
+ret = False # фрейм прочитан корректно?
+frame = frame_image(If_Test_Foto, ret , frame, image)# или скрин или фото
 
+height, width =  cv2_height_width(frame, height ,width )# размер скрина
+min_w, min_h = cv2_rectangle_min_W_H(height ,width)
 x = y = w = h = 0
-"""
-from gi.repository import Gdk
-s = Gdk.Screen.get_default()
-print s.get_width(), s.get_height()
-"""
 
-logging.basicConfig(filename="sample.log", level=logging.INFO)
+
 if __name__ == "__main__":
-
-
     # без обнуления
     return_Id_to_face = Queue() #очередь для сняти инфы с потока     
     #height, width = 626+100, 537 #зармеры экрана
@@ -283,12 +275,11 @@ if __name__ == "__main__":
     flag_disease = False  # на решение по темпер
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
-    if If_Test_Foto :
-        image = cv2.imread("./Test.jpg")
     color = (255, 255, 255) # цвет задника
     
     # с особым обнулением
     id_hread =  None #для потока
+    if_null_hread = False #  (можно ли обнулить именно id_hread )
     
     # с обнулением
     time_temp1 = time.time() #начало сканирования лица #для шага в программе
@@ -302,17 +293,13 @@ if __name__ == "__main__":
     ret = False # фрейм прочитан корректно?
     if_null = True #  (можно ли обнулить)
     if_on = False # при выполнении проверки на всё
-    if_null_hread = False #  (можно ли обнулить именно id_hread )
     if_on_fase = False # найден ли id
-    #time_if = False # момент за 1 сек до time_out
-    #i = 0 # ходов программы без прерывания
+    ime_out_ = 0
     while(Active):
         temp_tepl_Raw, temp_tepl, tempPir = teplo()# получаем тепло 
-        #flag_disease = valid_var(temp_tepl, tempPir) 
-        #temp_text_telo, temp_text_Pir, temp_text_tepl = Str_teplo(temp_tepl_Raw, temp_tepl, tempPir)# получаем текст на тепло
         time_ = time.time() - time_temp1        
-        #print(if_null) 
         if if_null: # обнуление
+            time_out_ = 0
             #logging.info("Reset {}".format( time.time()))
             led_all_off() # выкл свет  time_out = time_out_const # таймер на определение человека
             if_save_time = False # ускорение вывода
@@ -326,35 +313,23 @@ if __name__ == "__main__":
             ret = False # фрейм прочитан корректно?
             if_null = False #  (можно ли обнулить)
             if_on = False # при выполнении проверки на всё
-            #if_null_hread = True #  (можно ли обнулить именно id_hread )# возможно косяки...
         if if_null_hread: # возможно косяки...
             if not id_hread is None: # сущ ли процесс
                 if id_hread.is_alive():# заверш ли процесс
                     if_null_hread = True #  (можно ли обнулить именно id_hread )# возможно косяки...
                     if If_Test_print_reset:print("1 id_hread")  
-                    #id_hread.terminate() #????????????
-                    #id_hread.join()
-                    #if  id_hread.is_alive():# заверш ли процесс ## может так везде?
                 if not id_hread.is_alive():    
                     id_hread.close()
                     if If_Test_print_reset:print("1 id_hread 1")  
                     id_hread = None
                     if_null_hread = False
-        if not If_Test_Foto :
-            del frame #переменная под фрейм с камеры
-            frame = None #переменная под фрейм с камеры
-            ret , frame = cap.read()
-                             
-            if not frame is None:
-                frame = cv2.flip(frame,1) # ореентация камеры
-                frame = frame[:, 185:455]
-        else:
-        #if 1==1: # для теста
-            frame = numpy.copy((image))
-            
-        x, y, w, h  = faces_x_y(frame, x , y, w, h)
         
-        if x + y + w + h != 0 and (150 <=w or 150 <=h ) and not if_null_hread:
+        frame = frame_image(If_Test_Foto, ret , frame, image) # или скрин или фото
+        x, y, w, h  = faces_x_y(frame, x , y, w, h)
+
+        if x + y + w + h != 0 and (min_w <=w or min_h <=h ) and not if_null_hread:
+            print("and {} {} {} {}".format(x, y, w, h))
+            print("min_ {} {}".format(min_w, min_h ))
             if If_Test_print_reset:print("next")
             if not flag_id_on:
                 if id_hread is None:#если процесс не сущ
@@ -362,12 +337,7 @@ if __name__ == "__main__":
                     clearQueue(return_Id_to_face) # обнуление очереди( костыль #1)
                     id_hread = Process(target=Id_to_face, args=(fase_RGB_200_200,return_Id_to_face))#, daemon=True
                     id_hread.start()#запуск потока по поиску в бд      
-            
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
-            
             time_out_ = time_out-time_
-            #if If_Test_print_reset:
-            #print("time {} {} {}".format(time_out_, time_out, time_))
             if not flag_id_on and  1.5 < time_out_ :
                 if not id_hread is None: # сущ ли процесс
                     if not id_hread.is_alive(): # заверш ли процесс
@@ -388,103 +358,61 @@ if __name__ == "__main__":
                             id_hread.close()
                             id_hread = None
                             if If_Test_print_reset:print("2 id_hread 1") 
-            flag_id_on = flag_id_on or(not (id_person is None or id_person == -1)) #True 
-
-            r_w = w/(23) #w/23 / 21.5
-            q_h = int(y+(h/2 + r_w*(10.5))) #y+h-10
-            q_w = int(x+(w/2 - r_w*(9.7)))
-            #if  1.0 < time_out_:
-                #text_fase if 1.0 < time_out_ "{}".format(int(time_out_)) else if flag_id_on: "V" else "X"
-                #cv2.putText(frame, text_fase , (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, r_w, (0, 255, 0), 1, cv2.LINE_AA)
-            #print("_____________")
+            flag_id_on = flag_id_on or (not (id_person is None or id_person == -1))# найден ли id
             if (not (id_person is None or id_person == -1)) and ((32 < tempPir < 45) and (32 < temp_tepl < 45) and 1.0 < time_out_):
                 if_save_time = True # ускорение вывода
-                #time_temp1 = time_out-time_-(time_out-1)
-                #time_out = 1
-                #print("ok")
-                
-            if  1.0 < time_out_ and (not if_save_time): # выводим время
-                cv2.putText(frame, "{}".format(int(time_out_)), (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, r_w, (0, 255, 0), thickness_fase, cv2.LINE_AA)
-            
-            elif 0.5< time_out_ <= 1.0 or (if_save_time): # выводим распазнание # 0.5 <
-                cv2_putText_flag_id_on(flag_id_on, thickness_fase)#вывод v/x на экран
-
             if  0.5 < time_out_ and (not if_save_time): # выводим время
-                pass #if False: print("") # 
+                pass 
             elif 0.1 < time_out_ <= 0.5 or (if_save_time):  # сохраняем   
                 if_save_time = False
-                #For_bz += 0.5
-                #print("For_bz = {}".format(For_bz)) 
                 For_bz += 1 
-                #print("For_bz = {}".format(For_bz)) 
-                
                 logging.info("For_bz = {} :{}".format(For_bz, time.time()))
                  
                 if  if_save  : 
-                    #For_bz += 1   
                     if ((32 < tempPir < 45) and (32 < temp_tepl < 45)): # защита от нелюдей
-                        #print("time  {}".format(time_out_))
-                        #print("_____________")
-                        #print("For_bz = {}".format(For_bz)) 
                         if_save = False
                         print("on_buzer")
                         flag_disease = valid_var(temp_tepl, tempPir) 
                         if If_Test_print_reset:print("on {} log {}".format(flag_disease, id_person))
                         if flag_id_on:
                             logging.info("dataBase id_person= {} : {}".format(id_person, flag_disease))
-                        #on_buzer(True)
-                        dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_temp_tepl, raw_teplovizor=temp_tepl_Raw)
+                        on_buzer(True)
+                        dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_teplovizor=temp_tepl_Raw)
                         if (not flag_disease) and flag_id_on: # если человек и температ, то действие
                             if_on = True # при выполнении проверки на всё
-                            #print(if_on)
                         else:      
                             logging.info("off id_person= {} :{}".format(id_person, time.time()))
                             led_green(False)
                             led_red(True)
-                            #led_red_mig()
                     else: 
                         led_green(False)
                         led_red(True)
-                        #led_red_mig()
                     if  not if_save  :
                         if_null = True
                         if If_Test_print_reset:print("reset not if_save")  
             else: 
                 if_null = True
                 if If_Test_print_reset:print("reset time_out_ < 0.1")  
-             
+            cv2_putText_x_y_time_out_(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h, time_out_, if_save_time)     
         else: 
             if_null = True
             if If_Test_print_reset:print("reset x-y-h-w")  
-        #print(id_person)
-        cv2_putText(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, height, width) # вывод текста на экран
-               
         
         
-        
-        #if if_on: #если нашли человека
-        #    cv2_putText_flag_id_on(flag_id_on, thickness_fase) #вывод v/x на экран
         cv2.imshow('window', frame)
         
         if if_on:# если человек и температ, то действие
-        
             logging.info("on id_person= {} :{}".format(id_person, time.time()))
             print("on")
             if_on = False # при выполнении проверки на всё
-            led_green_mig(3)
+            #led_green_mig(3)
             led_red(False)
             led_green(True)
-            
-
-                
+ 
             #  действие
             #time.sleep(2)
-        
-        
-        # cv2.imshow('frame',gray)
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            
-            #faceshread.mode_run = False
             if not id_hread is None:
                 if id_hread.is_alive():
                     #id_hread.join()
