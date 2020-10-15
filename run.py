@@ -15,6 +15,8 @@ import logging ## лог
 
 from multiprocessing.pool import ThreadPool
 from multiprocessing import Pool, Process , Queue
+#import tkinter as tk
+# True False
 if_test_wimdovs = False # тест на винде?
 
 if if_test_wimdovs:
@@ -146,7 +148,81 @@ def faces_x_y(frame, x , y , w , h): # ф-я для поиска границ
         for (x1 , y1 , w1 , h1) in faces:
             x , y , w , h = x1 , y1 , w1 , h1       
     return x , y , w , h #, id_hread 
-import tkinter as tk
+
+def text_separator(text, saze = 20):# делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)
+    list = []
+    if len(text) <= saze:
+        list.append(text.strip())  
+    else:
+        text_temp = ""
+        text_temp_end = 0
+        saze_temp = 0
+        for w in text.split():#пройтись по каждому слову
+            if text_temp != "" and saze_temp + len(w) > saze:
+                list.append(text_temp.strip())     
+                text_temp = ""
+                saze_temp = 0
+                text_temp_end = 0
+                
+            if text_temp == "" and len(w) > saze:
+                list.append(w.strip()) 
+                text_temp_end = 0
+                text_temp = ""
+                saze_temp = 0 
+            else:
+                if saze_temp + len(w)  <= saze:
+                    saze_temp += len(w) 
+                    text_temp += w
+                    text_temp_end = 1 
+                else:    
+                    list.append(text_temp.strip()) 
+                    text_temp_end = 0
+                    saze_temp = len(w)
+                    text_temp = w 
+                    
+                    text_temp_end = 1
+    
+                if saze_temp != 0 and saze_temp <= saze-1:
+                    saze_temp += 1
+                    text_temp += " "
+        if text_temp_end == 1 :
+            list.append(text_temp.strip())
+    return list
+    
+
+def cv2_putTex_rectangle(frame, text, x, y , distance_lines, cv2_FONT, fontScale, color_text, thickness,  color_font, lineType): # вывод текста с фоном
+    x1,y1 = x, y
+    w1 = h1 =0
+    if text !=" ":       
+        [(text_width, text_height), baseline] = cv2.getTextSize(text, cv2_FONT, fontScale, thickness)
+        if text_width != 0 and text_height != 0:
+            dist = int (distance_lines/2)
+            cv2.rectangle(frame, (x-dist, y+dist), (x+text_width+dist, y-text_height-dist), color_font, -1)
+            cv2.putText(frame, text, (x, y), cv2_FONT, fontScale, color_text, thickness, lineType)
+            x1, y1, w1, h1 = x, y, text_width , text_height + distance_lines
+    return x1, y1, w1, h1
+ 
+def cv2_text_separator_putTex_rectangle(frame, text, x, y, cv2_FONT, fontScale, color_text, thickness,  color_font, lineType, direction=0): # вывод текста с фоном с направлением 1- вверх, 0 - вниз
+    if text !=" ":
+        list_text = text_separator(text, 20) # делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)   
+        saze_list = len(list_text) 
+        [(text_width, text_height), baseline] = cv2.getTextSize(list_text[0], cv2_FONT, fontScale, thickness)
+        
+        d=0
+        x1=y1=w1=h1=0
+        x1 = x
+        distance_lines = text_height
+        if direction == 1: #вверх 
+            d=-1 
+            y1 = y-text_height*(saze_list) 
+        elif direction == 0:  # вниз
+            y1 = y +distance_lines *2
+            d=1
+        i=0
+        for _text in list_text:#пройтись по каждому слову
+            #cv2_putTex_rectangle(frame, _text, x, y+d*(text_height*((saze_list)-i)+10), cv2_FONT, fontScale, color_text, thickness,  color_font, lineType) # вывод текста с фоном
+            x1,y1,w1,h1 = cv2_putTex_rectangle(frame, _text, x1, y1+d*(h1),distance_lines, cv2_FONT, fontScale, color_text, thickness,  color_font, lineType) # вывод текста с фоном
+            i+=1
 
 def cv2_putText_flag_id_on(flag_id_on, q_w, q_h, r_w, thickness=4):##вывод v/x на экран
     if flag_id_on: #если нашли человека
@@ -158,13 +234,10 @@ def cv2_putText_flag_id_on(flag_id_on, q_w, q_h, r_w, thickness=4):##вывод 
 def cv2_rectangle_min_W_H(height, width):# размер минимальных границ
     w = h = 0
     if height + width != 0:
-        d=2
+        d=3# КОФИЦИЕНТ НА МИН ДЛИНУ НАСПОЗНАНИЯ
         w = h = round(numpy.max([height/d, width/d]), 0) 
-
     if w <= 2 or h <= 2:
         w = h = 150
-        
-        
     return w, h
 
 def cv2_height_width(frame, height=0, width=0):# размер скрина
@@ -172,14 +245,13 @@ def cv2_height_width(frame, height=0, width=0):# размер скрина
     if height + width == 0:
         height = numpy.size(frame, 0)
         width = numpy.size(frame, 1)
-   
     return height, width
 
 def cv2_putText_x_y(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h): # вывод имя и текста на экран
     if x + w + y + h > 0:
         color_text =(0, 114, 255) #(33, 47, 252) #(255, 150, 0) # цвет text
         id_person1 = id_person
-        
+        color_font = (255, 0, 0)
         if id_person1 ==-1: id_person1 =  None
         
         TStr_ID1, TStr_ID2  = Str_ID(id_person1)
@@ -191,15 +263,26 @@ def cv2_putText_x_y(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w
         if TStr_ID1 !=" ":
             #cv2.rectangle(frame, (0, x, y-10), (30, 30*len(TStr_ID1)), (255, 255, 255), -1)
     
-            cv2.putText(frame, TStr_ID1, (x, y-10), font, r_w, (color_text), 2)
+            #cv2.putText(frame, TStr_ID1, (x, y-10), cv2.FONT_HERSHEY_COMPLEX , r_w, (color_text), 2)
+            #cv2_putTex_rectangle(frame, TStr_ID1, x, y-10, cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2)
+            cv2_text_separator_putTex_rectangle(frame, TStr_ID1, x, y, cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2,1)
+        
+        cv2_text_separator_putTex_rectangle(frame, temp_text_tepl, x, y + h ,  cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2,0)   
+        """
         if len(temp_text_tepl) > 20:
             temp_text_tepl1 = temp_text_tepl[:20] 
             temp_text_tepl2 = temp_text_tepl[20:]
-            cv2.putText(frame, temp_text_tepl1, (x, y + h + 30), font, r_w, (color_text), 2)
-            cv2.putText(frame, temp_text_tepl2, (x, y + h + 60), font, r_w, (color_text), 2)
+            
+            
+            cv2_putTex_rectangle(frame, temp_text_tepl1, x, y + h + 30, cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2)
+            cv2_putTex_rectangle(frame, temp_text_tepl2, x, y + h + 60, cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2)
+            #cv2.putText(frame, temp_text_tepl1, (x, y + h + 30), cv2.FONT_HERSHEY_COMPLEX , r_w, (color_text), 2)
+            #cv2.putText(frame, temp_text_tepl2, (x, y + h + 60), cv2.FONT_HERSHEY_COMPLEX , r_w, (color_text), 2)
         else:
-            cv2.putText(frame, temp_text_tepl, (x, y + h + 30), font, r_w, (color_text), 2)
-
+            #cv2.putText(frame, temp_text_tepl, (x, y + h + 30), cv2.FONT_HERSHEY_COMPLEX , r_w, (color_text), 2)
+            cv2_putTex_rectangle(frame, temp_text_tepl, x, y + h + 30, cv2.FONT_HERSHEY_COMPLEX , r_w, color_text, 2, color_font, 2)
+        """
+    
 def cv2_putText_x_y_time_out_(frame, id_person, temp_tepl_Raw, temp_tepl, tempPir, x, y, w, h, time_out_, if_save_time):  # вывод знака и  таймера + cv2_putText_x_y
     if x + w + y + h >0 and time_out_ > 0:
 
@@ -328,8 +411,8 @@ if __name__ == "__main__":
         x, y, w, h  = faces_x_y(frame, x , y, w, h)
 
         if x + y + w + h != 0 and (min_w <=w or min_h <=h ) and not if_null_hread:
-            print("and {} {} {} {}".format(x, y, w, h))
-            print("min_ {} {}".format(min_w, min_h ))
+            #print("and {} {} {} {}".format(x, y, w, h))
+            #print("min_ {} {}".format(min_w, min_h ))
             if If_Test_print_reset:print("next")
             if not flag_id_on:
                 if id_hread is None:#если процесс не сущ
