@@ -60,7 +60,6 @@ def led_green(on): # вкл/выкл свет
 
 
 def led_mig(led_pin, on = True): # вкл/выкл свет
-    #print("led_all_mig")
     led_off(led_pin,on)  
     led_off(led_pin,not on)      
 
@@ -147,9 +146,13 @@ def faces_x_y(frame, x , y , w , h): # ф-я для поиска границ
         faces = face_detector.detectMultiScale(gray, 1.3, 5)
         for (x1 , y1 , w1 , h1) in faces:
             x , y , w , h = x1 , y1 , w1 , h1       
-    return x , y , w , h #, id_hread 
+    return x , y , w , h
 
 def text_separator(text, saze = 20):# делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)
+    """
+    text -  текст
+    saze - мах размер
+    """
     list = []
     if len(text) <= saze:
         list.append(text.strip())  
