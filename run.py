@@ -150,7 +150,9 @@ def faces_x_y(frame, x , y , w , h): # ф-я для поиска границ
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces = face_detector.detectMultiScale(gray, 1.3, 5)
         for (x1 , y1 , w1 , h1) in faces:
-            x , y , w , h = x1 , y1 , w1 , h1       
+            x , y , w , h = x1 , y1 , w1 , h1 
+            break
+            
     return x , y , w , h
 
 def text_separator(text, saze = 20):# делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)
@@ -352,7 +354,7 @@ frame = None #переменная под фрейм с камеры
 ret = False # фрейм прочитан корректно?
 frame = frame_image(If_Test_Foto, ret , frame, image)# или скрин или фото
 
-height, width =  cv2_height_width(frame, height ,width )# размер скрина
+height, width = cv2_height_width(frame, height ,width )# размер скрина
 min_w, min_h = cv2_rectangle_min_W_H(height ,width)
 x = y = w = h = 0
 
@@ -360,8 +362,6 @@ x = y = w = h = 0
 if __name__ == "__main__":
     # без обнуления
     return_Id_to_face = Queue() #очередь для сняти инфы с потока     
-    #height, width = 626+100, 537 #зармеры экрана
-    #time_out_const = 6 #6 # константа на таймер на определение человека
     time_out = 6 # таймер на определение человека
     flag_disease = False  # на решение по темпер
     time_ = 0 # продолжительность скана лица
@@ -419,8 +419,6 @@ if __name__ == "__main__":
         x, y, w, h  = faces_x_y(frame, x , y, w, h)
 
         if x + y + w + h != 0 and (min_w <=w or min_h <=h ) and not if_null_hread:
-            #print("and {} {} {} {}".format(x, y, w, h))
-            #print("min_ {} {}".format(min_w, min_h ))
             if If_Test_print_reset:print("next")
             if not flag_id_on:
                 if id_hread is None:#если процесс не сущ
@@ -496,7 +494,6 @@ if __name__ == "__main__":
             logging.info("on id_person= {} :{}".format(id_person, time.time()))
             print("on")
             if_on = False # при выполнении проверки на всё
-            #led_green_mig(3)
             led_red(False)
             led_green(True)
  
