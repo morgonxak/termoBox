@@ -100,11 +100,16 @@ def valid(tempPir, t_teplovizor):
     if t_teplovizor == 0 or tempPir == 0:
         return False, 'Нет всей информации по температуре. '    
 
-    tepl = round(numpy.max([t_teplovizor, tempPir]), 1)
-    if tepl >= 37.2:       
+    teplmax = round(numpy.max([t_teplovizor, tempPir]), 1)
+    teplmin = round(numpy.min([t_teplovizor, tempPir]), 1)
+    if teplmax >= 37.2 :    
         led_green(False)
         led_red(True)
-        return True, 'Обратитесь к врачу: {}'.format(tepl)
+        return True, 'Обратитесь к врачу: {}'.format(teplmax)
+    elif 32 > teplmin:
+        led_green(False)
+        led_red(True)
+        return True, 'Обратитесь к врачу: {}'.format(teplmin)
     else:
         return False, 'Все хорошо,проходите: {}'.format(t_teplovizor)
       
