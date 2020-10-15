@@ -238,51 +238,8 @@ def main(path_BD, path_save_clf, pref='v2', dir_photo = 'photo_RGB'):
 
     save_BD_signs(r'/home/dima/PycharmProjects/fase_idTest/app_faceId/models/bd' + pref + '.pl')
 
-def branch_1():
-    '''
-    Вытаскивает данные о пользователях которые есть в системе с RGBD изображениями и создает классификатор
-    :return:
-    '''
-    obj_bd = BD(dict_connect_settings)
-    data = obj_bd.get_drgb_and_person_id()
-    pull_list_trening(data)
-    print(person_id)
-    # print(encodings[1])
-    # Обучаем нейросеть
 
-    print('обучаем нейросети')
-    clf_svm = train_cvm()
-    clf_knn = train_knn()
-    print("обучение завершено")
-    # # Сохраняем данные
-    # path_save_clf = r'/home/dima/PycharmProjects/paceID_server/app_faceId/data/temp'
-    # pref = str(1)
-    # save_model(clf_svm, os.path.join(path_save_clf, "svm_model_"+pref+'.pk'))
-    # save_model(clf_knn, os.path.join(path_save_clf, "knn_model_"+pref+'.pk'))
-
-def branch_2():
-    '''
-    Вытаскивает данные о пользователях которые есть в системе с RGB изображениями и создает классификатор
-    :return:
-    '''
-    obj_bd = BD(dict_connect_settings)
-    data = obj_bd.get_RGB_and_person_id()
-    pull_list_trening(data)
-    print(person_id)
-    # print(encodings[1])
-    # Обучаем нейросеть
-
-    print('обучаем нейросети')
-    clf_svm = train_cvm()
-    clf_knn = train_knn()
-    print("обучение завершено")
-    # # Сохраняем данные
-    path_save_clf = r'/rs'
-    pref = str(1)
-    save_model(clf_svm, os.path.join(path_save_clf, "svm_model_"+pref+'.pk'))
-    save_model(clf_knn, os.path.join(path_save_clf, "knn_model_"+pref+'.pk'))
-
-def branch_3():
+def branch_3(path_dataset, path_save):
     '''
     вытаскивает из пикл файла пользователей и обучает нейросеть по ней
     :return:
@@ -333,21 +290,28 @@ def branch_3():
 
         print("Загрузка данных завершена")
 
-    pathPhoto = r'/home/pi/project/photoBR'
-    # pathPhoto = r'/home/dima/Документы/test'
-
-    load_image_people(pathPhoto)
+    load_image_people(path_dataset)
 
     print('обучаем нейросети')
     clf_svm = train_cvm()
     clf_knn = train_knn()
     print("обучение завершено")
     # # Сохраняем данные
-    # path_save_clf = r'/home/dima/PycharmProjects/faseid_door/rs'
-    path_save_clf = r'/home/pi/project/termoBox/expiriments'
+
     pref = str(1)
-    save_model(clf_svm, os.path.join(path_save_clf, "svm_model_" + pref + '.pk'))
-    save_model(clf_knn, os.path.join(path_save_clf, "knn_model_" + pref + '.pk'))
+    save_model(clf_svm, os.path.join(path_save, "svm_model_" + pref + '.pk'))
+    save_model(clf_knn, os.path.join(path_save, "knn_model_" + pref + '.pk'))
+
+def branch_4(path_database, path_save):
+    global encodings, person_id
+    encodings, person_id = load_BD_signs(path_database)
+    print('обучаем нейросети')
+    clf_svm = train_cvm()
+    clf_knn = train_knn()
+    print("обучение завершено")
+    pref = str(1)
+    save_model(clf_svm, os.path.join(path_save, "svm_model_" + pref + '.pk'))
+    save_model(clf_knn, os.path.join(path_save, "knn_model_" + pref + '.pk'))
 
 def ViverPhoto():
     def load_image_people(pathPhoto):
@@ -407,6 +371,7 @@ def ViverPhoto():
     load_image_people(pathPhoto)
 
 
-if __name__ == '__main__':
-    branch_3()
+if __name__ == '__main__': #/home/dima/PycharmProjects/recognition_service_client_simplified/rc
+    # branch_3('/home/dima/Документы/photoBR_test', '/home/dima/PycharmProjects/recognition_service_client_simplified/rc')
+    branch_4('/home/dima/PycharmProjects/pass_office_thermoBox/rc/dataBase_1.pk','/home/dima/PycharmProjects/recognition_service_client_simplified/rc')
     # ViverPhoto()

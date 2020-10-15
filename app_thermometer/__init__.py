@@ -23,14 +23,8 @@ pathProject = '/home/pi/project/termoBox/expiriments'
 #Recognition
 face_detector = cv2.CascadeClassifier(path_haarcascade)
 
-k = 1
-path_cvm_model = os.path.join(pathProject, 'svm_model_{}.pk'.format(k))
-path_knn_model = os.path.join(pathProject, 'knn_model_{}.pk'.format(k))
 
-model_cvm = pickle.load(open(path_cvm_model, 'rb'))
-model_knn = pickle.load(open(path_knn_model, 'rb'))
-
-processing_recognition = processing_faceid(model_cvm, model_knn)
+processing_recognition = processing_faceid(pathProject)
 ##########################
 
 teplovizor = amg88()
