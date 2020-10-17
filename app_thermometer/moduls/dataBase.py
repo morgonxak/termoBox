@@ -6,6 +6,9 @@ import datetime
 import uuid
 import os
 
+import sqlite3
+from sqlite3 import Error
+
 dict_connect_settings = {"database": "thermobox",
                          "user": "pi",
                          "password": "asm123",
@@ -16,21 +19,44 @@ path_save_image = '/home/pi/project/log'
 
 class BD:
     def __init__(self, dict_connect_settings):
-        #Соеденения с базой данных
-        try:
-            self.con = psycopg2.connect(
-                database=dict_connect_settings['database'],
-                user=dict_connect_settings['user'],
-                password=dict_connect_settings['password'],
-                host=dict_connect_settings['host'],
-                port=dict_connect_settings['port'])
-        except BaseException as e:
-            raise ValueError("Error connect BD: " + str(e))
 
+        #Соеденения с базой данных
+        if type(dict_connect_settings) != 'str':
+            try:
+                self.con = psycopg2.connect(
+                    database=dict_connect_settings['database'],
+                    user=dict_connect_settings['user'],
+                    password=dict_connect_settings['password'],
+                    host=dict_connect_settings['host'],
+                    port=dict_connect_settings['port'])
+            except BaseException as e:
+                raise ValueError("Error connect BD: " + str(e))
+
+            try:
+                self.cur = self.con.cursor()
+            except BaseException as e:
+                raise ValueError("Error create cursor " + str(e))
+        else:
+            try:
+                self.con =  self.connect_sqlite3(dict_connect_settings)
+                #self.con = self.con.cursor()
+                self.cur = self.con.cursor()
+            except BaseException as e:
+                raise ValueError("Error connect BD: " + str(e))
+
+
+
+    def connect_sqlite3(self, pathDataBase:str):
+        '''
+        Соеденяемся с базой данных
+        :param pathDataBase:
+        :return:
+        '''
         try:
-            self.cur = self.con.cursor()
-        except BaseException as e:
-            raise ValueError("Error create cursor " + str(e))
+            con = sqlite3.connect(pathDataBase)
+            return con
+        except Error:
+            print(Error)
 
     def push_data_log(self, flag_disease, frame:np.ndarray, temp_pirom=None, temp_teplovizor=None, raw_pirom=None, raw_teplovizor=None, person_id=None):
         '''
@@ -64,6 +90,14 @@ class BD:
 
         name_image = '{}_{}_{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), flag_disease, temp_teplovizor, temp_pirom, recognition)
 
+        #self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='log')
+        """
+        try:
+            self.cur.execute('''CREATE TABLE log(sp_word TEXT, word_len INT, word_alpha TEXT,word_score INT)''')
+            self.con.commit()
+        except OperationalError:
+            None
+        """
         cv2.imwrite(os.path.join(path_save_image, name_image+'.jpg'), frame)
         self.cur.execute(
             "INSERT INTO log (person_id, data_time, temp_pirometr, temp_teplovizor, raw_pirometr, raw_teplovizor, name_image) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
