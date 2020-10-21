@@ -93,7 +93,7 @@ class BD:
         #self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='log')
         """
         try:
-            self.cur.execute('''CREATE TABLE log(sp_word TEXT, word_len INT, word_alpha TEXT,word_score INT)''')
+            self.cur.execute('''CREATE TABLE log(person_id INTEGER, data_time DATETIME, temp_pirometr INTEGER, temp_teplovizor INTEGER, raw_pirometr INTEGER, raw_teplovizor INTEGER, name_image TEXT)''')
             self.con.commit()
         except OperationalError:
             None

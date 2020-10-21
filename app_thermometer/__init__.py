@@ -10,14 +10,14 @@ from app_thermometer.moduls.mlx90614 import MLX90614
 from smbus2 import SMBus
 import numpy
 from app_thermometer.moduls.dataBase import BD
-"""
-dict_connect_settings = {"database": "thermobox",
-                         "user": "pi",
-                         "password": "asm123",
-                         "host": "127.0.0.1",
-                          "port": "5432"}
-"""
-dict_connect_settings =     pathDataBase = os.path.join('.','rc','database')
+if 1==1:
+    dict_connect_settings = {"database": "thermobox",
+                             "user": "pi",
+                             "password": "asm123",
+                             "host": "127.0.0.1",
+                              "port": "5432"}
+else:
+    dict_connect_settings =     pathDataBase = os.path.join('.','rc','database')
 
 
 path_haarcascade = '/home/pi/project/termoBox/app_thermometer/rc/haarcascade_frontalface_default.xml'
