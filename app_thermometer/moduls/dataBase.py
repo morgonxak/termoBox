@@ -87,7 +87,8 @@ class BD:
         if temp_teplovizor is None: temp_teplovizor = -1
         if raw_pirom is None: raw_pirom = -1
         if raw_teplovizor is None: raw_teplovizor = -1
-
+        
+        print("1 2 1")
         name_image = '{}_{}_{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), flag_disease, temp_teplovizor, temp_pirom, recognition)
 
         #self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='log')
@@ -98,12 +99,23 @@ class BD:
         except OperationalError:
             None
         """
+        
+        print("1 2 2")
         cv2.imwrite(os.path.join(path_save_image, name_image+'.jpg'), frame)
+        
+        print("1 2 3")
+         
+        str_ = "INSERT INTO log (person_id, data_time, temp_pirometr, temp_teplovizor, raw_pirometr, raw_teplovizor, name_image) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
+                person_id, data_time, temp_pirom, temp_teplovizor, raw_pirom, raw_teplovizor, name_image) 
+        print(str_)
         self.cur.execute(
-            "INSERT INTO log (person_id, data_time, temp_pirometr, temp_teplovizor, raw_pirometr, raw_teplovizor, name_image) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
-                person_id, data_time, temp_pirom, temp_teplovizor, raw_pirom, raw_teplovizor, name_image)
+            str_
         )
+        
+        print("1 2 4")
         self.con.commit()
+        
+        print("1 2 5")
 
     def get_people_name_by_person_id(self, person_id):
         '''
