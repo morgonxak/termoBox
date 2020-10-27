@@ -93,6 +93,21 @@ def Str_ID(id_person):# текст на  id
         temp_text = "Привет, {}".format(dataBase.get_people_name_by_person_id(id_person))
     return temp_text
 
+def if_valid_min(tempPir, t_teplovizor):
+    if t_teplovizor == 0 or tempPir == 0:
+        #return False, 'Нет всей информации по температуре. '
+        return False
+    teplmin = round(numpy.max([t_teplovizor, tempPir]), 1)
+    #print("teplmin {}".format(teplmin))
+    if 29 < teplmin:
+        #led_green(False)
+        #led_red(True)
+        #return True, 'Обратитесь к врачу: {}'.format(teplmin)
+        return True
+    else:
+        #return False, 'Все хорошо,проходите: {}'.format(t_teplovizor)
+        return False
+    
 def if_valid(tempPir, t_teplovizor):
     '''
     Решения о состоянии здоровья
@@ -120,6 +135,9 @@ def if_valid(tempPir, t_teplovizor):
         #return False, 'Все хорошо,проходите: {}'.format(t_teplovizor)
         return False, t_teplovizor
 
+
+
+
 def valid(tempPir, t_teplovizor):
     '''
     Решения о состоянии здоровья
@@ -127,7 +145,10 @@ def valid(tempPir, t_teplovizor):
     :param t_teplovizor:
     :return: текст сообщения
     '''
-    temt_if,t_teplo = if_valid(tempPir, t_teplovizor) 
+    temt_if,t_teplo = if_valid(tempPir, t_teplovizor)
+    
+    #print("t_teplovizor {} tempPir {} if {}".format(t_teplovizor, tempPir, temt_if))
+    
     temt_str = ""
     if t_teplo == 0: 
         temt_str = 'Нет всей информации по температуре. '
@@ -154,12 +175,17 @@ def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0): # цифры на  tepl
     temp_tepl_Raw = temp_tepl = tempPir = 0
     try:
         temp_tepl_Raw, temp_tepl = teplovizor.getMaxTemp()
+        temp_tepl+=3
         if GPIO.input(18) == False:#у нас есть отжатая кнопа?  
             tempPir = round(pirometr.get_object_1(),1)
+            tempPir+=3
         else:
             led_red(False)
+        
     except: # Queue.Empty
         pass
+    #print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
+                        
     return temp_tepl_Raw, temp_tepl, tempPir
 
 def Str_teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0):# текст на  tepl
@@ -399,7 +425,7 @@ if __name__ == "__main__":
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
     color = (255, 255, 255) # цвет задника
-    
+    time_Sql = 0
     # с особым обнулением
     id_hread =  None #для потока
     if_null_hread = False #  (можно ли обнулить именно id_hread )
@@ -495,32 +521,41 @@ if __name__ == "__main__":
                     For_bz += 1 
                     logging.info("For_bz = {} |time:{}".format(For_bz, time.time()))
                     #print("1")   
+                    
                     if  if_save  : 
                         #if ((32 < tempPir < 45) and (32 < temp_tepl < 45)): # защита от нелюдей
-                        flag_disease = valid_var(temp_tepl, tempPir) 
-                        print("temp_tepl {} tempPir {} {}".format(temp_tepl, tempPir, flag_disease))
-                        if (not flag_disease): # защита от нелюдей
                         
+                        #######flag_disease = valid_var(temp_tepl, tempPir) 
+                        
+                        #print("temp_tepl {} tempPir {} {}".format(temp_tepl, tempPir, flag_disease))
+                        #if (not flag_disease): # защита от нелюдей
+                        #print(if_valid_min(temp_tepl, tempPir))
+                        if if_valid_min(temp_tepl, tempPir):
                             #print("1 0")   
                             if_save = False
                             #print("on_buzer")
                             #flag_disease = valid_var(temp_tepl, tempPir) 
                             
                             #print("1 0 1")
+                            flag_disease = valid_var(temp_tepl, tempPir) 
                             if If_Test_print_reset:print("on {} log {}".format(flag_disease, id_person))
                             
-                            if flag_id_on:
-                                print("1 0")
-                                logging.info("dataBase id_person= {} |flag_disease: {}".format(id_person, flag_disease))
+                            #if flag_id_on:
+                            #print("1 0")
+                            logging.info("dataBase id_person= {} |flag_disease: {}".format(id_person, flag_disease))
                             
-                            print("1 1")   
-                            #on_buzer(True)
+                            #print("1 1")   
+                            on_buzer(True)
                             
-                            print("1 2")
-                            dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_teplovizor=temp_tepl_Raw)
+                            #print("1 2")
+                            
+                            if time.time() - time_Sql > 1 :
+                                time_Sql = time.time()
+                            
+                            dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_pirom=temp_tepl_Raw)
                             
                             
-                            print("1 3")
+                            #print("1 3")
                             if (not flag_disease) and flag_id_on: # если человек и температ, то действие
                                 if_on = True # при выполнении проверки на всё
                             else:      
