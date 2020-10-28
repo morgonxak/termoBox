@@ -49,8 +49,22 @@ class amg88:
         '''
         matrix = self.getMaxrix()
         temp = numpy.max(matrix)
+        """
+        print(matrix)
+        print("_________________")
+        print(temp)
+        print("\n")
+        """
         return temp, round(self.recalculation_of_temperatures(temp), 1)
-
+        
+    def test_2(self):
+        while True:
+            a,s = self.getMaxTemp()
+            print(a)
+            print(s)
+            print("\n")
+            time.sleep(1)
+            
     def test_1(self):
         '''
 
@@ -62,7 +76,8 @@ class amg88:
                 print(["{0:.1f}".format(temp) for temp in row])
             print("\n")
             time.sleep(1)
+            
 
 if __name__ == '__main__':
     test = amg88()
-    test.test_1()
+    test.test_2()

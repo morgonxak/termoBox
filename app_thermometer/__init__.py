@@ -10,12 +10,19 @@ from app_thermometer.moduls.mlx90614 import MLX90614
 from smbus2 import SMBus
 import numpy
 from app_thermometer.moduls.dataBase import BD
+if 1==0:
+    tip_bd = 0
+    dict_connect_settings = {"database": "thermobox",
+                             "user": "pi",
+                             "password": "asm123",
+                             "host": "127.0.0.1",
+                              "port": "5432"}
+else:
+    tip_bd = 1
+    #dict_connect_settings = os.path.join('.','rc','database')
+    #dict_connect_settings =     pathDataBase = os.path.join('.','rc','database').
+    dict_connect_settings = './rc/database.bd'
 
-dict_connect_settings = {"database": "thermobox",
-                         "user": "pi",
-                         "password": "asm123",
-                         "host": "127.0.0.1",
-                          "port": "5432"}
 
 path_haarcascade = '/home/pi/project/termoBox/app_thermometer/rc/haarcascade_frontalface_default.xml'
 pathProject = '/home/pi/project/termoBox/expiriments'
@@ -30,7 +37,7 @@ processing_recognition = processing_faceid(pathProject)
 teplovizor = amg88()
 pirometr = MLX90614(SMBus(1))
 
-dataBase = BD(dict_connect_settings)
+dataBase = BD(dict_connect_settings,tip_bd)
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -47,9 +54,10 @@ GPIO.output(led_red_pin, GPIO.HIGH)
 GPIO.output(led_green_pin, GPIO.HIGH)
 ########################################
 #Buzer
+GPIO.setwarnings(False)
 GPIO.setup(pinBuzer, GPIO.OUT)
 #######################
-p = GPIO.PWM(pinBuzer, 1000)  # channel=12 frequency=50Hz
+p = GPIO.PWM(pinBuzer, 1000) # channel=12 frequency=50Hz
 
 def on_buzer(mode):
     '''

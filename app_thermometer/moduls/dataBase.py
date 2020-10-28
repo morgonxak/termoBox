@@ -6,31 +6,66 @@ import datetime
 import uuid
 import os
 
-dict_connect_settings = {"database": "thermobox",
-                         "user": "pi",
-                         "password": "asm123",
-                         "host": "10.10.22.214",
-                          "port": "5432"}
+import sqlite3
+from sqlite3 import Error
+
+if 1==2:
+    dict_connect_settings = {"database": "thermobox",
+                             "user": "pi",
+                             "password": "asm123",
+                             "host": "10.10.22.214",
+                              "port": "5432"}
+else:
+    dict_connect_settings = '/home/pi/project/recognition_service_client_simplified/rc/database'
 
 path_save_image = '/home/pi/project/log'
 
 class BD:
-    def __init__(self, dict_connect_settings):
+    def __init__(self, dict_connect_settings, type_BD=1):
+        #0 - psycopg2
+        #1 - sqlite3
+
         #Соеденения с базой данных
+        #if type(dict_connect_settings) != 'str':
+        self.dict_connect_settings = os.path.abspath(os.path.join(os.getcwd(),dict_connect_settings))
+        if type_BD == 0:
+            self.con = self.connect_psycopg2(self.dict_connect_settings)
+        elif type_BD == 1:
+            self.con =  self.connect_sqlite3(self.dict_connect_settings)
+        else:
+           raise ValueError("Error type_BD {}".format(type_BD)) 
         try:
-            self.con = psycopg2.connect(
+            self.cur = self.con.cursor()
+            
+        except BaseException as e:
+            raise ValueError("Error create cursor " + str(e))
+
+    def connect_psycopg2(self, dict_connect_settings):
+        try:
+            con = psycopg2.connect(
                 database=dict_connect_settings['database'],
                 user=dict_connect_settings['user'],
                 password=dict_connect_settings['password'],
                 host=dict_connect_settings['host'],
                 port=dict_connect_settings['port'])
+            return con
         except BaseException as e:
-            raise ValueError("Error connect BD: " + str(e))
+            raise ValueError("Error psycopg2 connect BD: " + str(e))
 
+    def connect_sqlite3(self, pathDataBase:str):
+        '''
+        Соеденяемся с базой данных
+        :param pathDataBase:
+        :return:
+        '''
         try:
-            self.cur = self.con.cursor()
+            con = sqlite3.connect(pathDataBase)
+            return con
         except BaseException as e:
-            raise ValueError("Error create cursor " + str(e))
+                raise ValueError("Error sqlite3 connect BD: " + str(e))
+        
+        #except Error:
+         #   print(Error)
 
     def push_data_log(self, flag_disease, frame:np.ndarray, temp_pirom=None, temp_teplovizor=None, raw_pirom=None, raw_teplovizor=None, person_id=None):
         '''
@@ -61,15 +96,27 @@ class BD:
         if temp_teplovizor is None: temp_teplovizor = -1
         if raw_pirom is None: raw_pirom = -1
         if raw_teplovizor is None: raw_teplovizor = -1
-
+        
         name_image = '{}_{}_{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), flag_disease, temp_teplovizor, temp_pirom, recognition)
 
+        #self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='log')
+        
+        try: #DATETIME
+            self.cur.execute('''CREATE TABLE log(person_id INTEGER, data_time DATETIME, temp_pirometr INTEGER, temp_teplovizor INTEGER, raw_pirometr INTEGER, raw_teplovizor INTEGER, name_image TEXT)''')
+            self.con.commit()
+        except:
+            None
+        
         cv2.imwrite(os.path.join(path_save_image, name_image+'.jpg'), frame)
-        self.cur.execute(
-            "INSERT INTO log (person_id, data_time, temp_pirometr, temp_teplovizor, raw_pirometr, raw_teplovizor, name_image) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
-                person_id, data_time, temp_pirom, temp_teplovizor, raw_pirom, raw_teplovizor, name_image)
-        )
+
+         
+        str_ = "INSERT INTO log (person_id, data_time, temp_pirometr, temp_teplovizor, raw_pirometr, raw_teplovizor, name_image) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}')".format(
+                person_id, data_time, temp_pirom, temp_teplovizor, raw_pirom, raw_teplovizor, name_image) 
+        #print(str_)
+        
+        self.cur.execute(str_)
         self.con.commit()
+        
 
     def get_people_name_by_person_id(self, person_id):
         '''
