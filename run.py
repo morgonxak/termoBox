@@ -9,13 +9,14 @@ Created on Wed Oct  7 13:10:45 2020
 
 import cv2
 import time
-#import threading
+import threading
 import numpy 
 import logging ## лог
 
 #from multiprocessing.pool import ThreadPool
 from multiprocessing import Process , Queue #,Pool 
 #import tkinter as tk
+import sys
 from sys import platform
 # True False
 if_test_wimdovs = False # тест на винде?
@@ -40,6 +41,11 @@ def Id_to_face(fase_RGB_200_200, return_Id_to_face): # поиск по фото
     #if return_Id_to_face.get() == -1 :
     return_Id_to_face.put(id_person)
 
+
+
+
+
+"""
 def led_off(led_pin,on = False): # выкл свет 
     #print("{}, {}".format(led_pin,on)) 
     if on == True:
@@ -82,6 +88,10 @@ def led_red_mig(saze = 1, on = True): # вкл/выкл red свет
 def led_green_mig(saze = 1, on = True): # вкл/выкл green свет
     for i in range(1, saze):
         led_mig(led_green_pin,on)     
+
+"""
+
+
 
 
 def Str_ID(id_person):# текст на  id
@@ -138,7 +148,11 @@ def if_valid(tempPir, t_teplovizor):
 
 
 
+
+
+
 def valid(tempPir, t_teplovizor):
+    global all_led
     '''
     Решения о состоянии здоровья
     :param tempPir:
@@ -153,12 +167,18 @@ def valid(tempPir, t_teplovizor):
     if t_teplo == 0: 
         temt_str = 'Нет всей информации по температуре. '
     else:
-        led_green(False)
-        led_red(True)
+        #all_led.led_mig(all_led.led_namber("red"),True)
+        
+        
+        #led_green(False)
+        #led_red(True)
         if temt_if:
             temt_str = 'Обратитесь к врачу: {}'.format(t_teplo)
+            all_led.led_on_time(all_led.led_namber("red"),0.5)
         else:
             temt_str = 'Все хорошо,проходите: {}'.format(t_teplo)
+            all_led.led_on_time(all_led.led_namber("red"),0.5)
+            all_led.led_on_time(all_led.led_namber("green"),0.5)
 
     return temt_if, temt_str
     
@@ -179,8 +199,8 @@ def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0): # цифры на  tepl
         if GPIO.input(18) == False:#у нас есть отжатая кнопа?  
             tempPir = round(pirometr.get_object_1(),1)
             tempPir+=3
-        else:
-            led_red(False)
+        #else:
+            #led_red(False)
         
     except: # Queue.Empty
         pass
@@ -371,7 +391,50 @@ def clearQueue(q): # обнуление очереди (чтоб без мато
             q.get_nowait()
     except: # Queue.Empty
         pass
+def maximizeContrast(imgGrayscale):
+    """
+    width, height2,w,w= cv2.getWindowImageRect('window')
+    height = numpy.size(imgGrayscale, 0)
+    width = numpy.size(imgGrayscale, 1)
+    #print (cv2.getWindowImageRect('window'))
     
+    
+    imgGrayscale1222 = numpy.copy(imgGrayscale)
+    
+    for i1, item1 in enumerate(imgGrayscale1222):
+        for i2, item2 in enumerate(item1):
+            for i3, item3 in enumerate(item2):
+                print (item3) #=255
+                
+                
+    """
+    """
+    coll = numpy.array([255, 255, 255])
+    print ("0")
+    
+    srt_1 = numpy.full((height2-height, width,3), 255)
+    
+    print(width, height2,w,w)
+    print(numpy.size(imgGrayscale, 0) ,numpy.size(imgGrayscale, 1), numpy.size(imgGrayscale, 2), imgGrayscale[0][0][0])
+    print(numpy.size(srt_1, 0) ,numpy.size(srt_1, 1), numpy.size(srt_1, 2), srt_1[0][0][0])
+    
+    #srt_ = numpy.full(width, coll)
+    #print ("1")
+    #srt_2 = numpy.full(height,srt_)
+    print ("2")
+    #del srt_
+    imgGrayscale2 = numpy.vstack(imgGrayscale, srt_1)
+    print ("3")
+    del srt_1
+    del imgGrayscale
+    print ("4")
+    imgGrayscale =imgGrayscale2
+    print ("5")
+    """
+    return imgGrayscale
+
+
+
 def frame_image(If_Test_Foto, ret , frame, image): # или скрин или фото от If_Test_Foto
     del frame #переменная под фрейм с камеры
     frame = None #переменная под фрейм с камеры
@@ -380,7 +443,8 @@ def frame_image(If_Test_Foto, ret , frame, image): # или скрин или ф
         if not frame is None:
             frame = cv2.flip(frame,1) # ореентация камеры
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) 
-            #frame = frame[:, 185:455]
+            frame = maximizeContrast(frame )
+            #frame = frame = [:, 185:455]
         else: 
             logging.error("except: frame is None")                       
             raise Exception("frame is None")
@@ -389,6 +453,274 @@ def frame_image(If_Test_Foto, ret , frame, image): # или скрин или ф
     return frame 
     
          
+
+
+
+
+
+
+
+class Thread_all(threading.Thread):
+    
+    def __init__(self):
+        super().__init__()
+        self.daemon = True
+        
+        self.if_active = False
+        self.if_ran = False
+        self.if_on = False
+        
+        self.if_Ok = False
+        
+        self.temp_tepl_Raw = 0
+        self.t_teplovizor = 0
+        self.tempPir = 0
+        
+    def teplo_teplo(self):
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir = teplo(self.temp_tepl_Raw, self.t_teplovizor, self.tempPir)
+    def teplo(self):
+        
+        return self.temp_tepl_Raw, self.t_teplovizor, self.tempPir
+    def if_valid_min(self):
+        return if_valid_min(self.tempPir, self.t_teplovizor)
+    def if_valid(self):
+        return if_valid(self.tempPir, self.t_teplovizor)
+    def valid(self):
+        return valid(self.tempPir, self.t_teplovizor)
+    def valid_text(self):
+        return valid_text(self.tempPir, self.t_teplovizor) 
+    def valid_var(self):
+        return valid_var(self.tempPir, self.t_teplovizor)
+    
+    def Ok_Open(self): ## ф-я на действие при сраб.
+        return 0
+    def If_Ok_Open(self):
+        if not self.if_Ok:
+            self.if_Ok = True
+    def on_of(self,iff = None):
+        if iff == None: 
+            self.if_active = not self.if_active 
+        else:
+            self.if_active = iff
+        return self.if_active 
+        
+    
+    def run(self):
+        self.if_on = True
+        t = time.time()
+        self.if_active = True
+        
+        while self.if_active:
+            #print(self.temp_tepl_Raw, self.t_teplovizor, self.tempPir)
+            if time.time()-t >= 0.1:
+                t = time.time()
+                self.teplo_teplo()
+                if self.if_Ok:
+                    self.if_Ok = False
+                    self.Ok_Open()
+        self.if_on = False
+
+
+
+
+
+
+
+
+class led_Thread(threading.Thread):
+    def __init__(self, if_test_wimdovs):
+        super().__init__()
+        self.if_test_wimdovs = if_test_wimdovs
+        self.if_active = False 
+        self.daemon = True
+        
+        self.led_pin_text = ["red", "green"] #название
+        self.led_pin = [23, 24] #пин
+        self.led_pin_ct = [False, False] #состояние
+        self.led_pin_if = [False, False] #режим
+        self.led_pin_mig = [False, False] #мигание
+        self.led_pin_time = [0.0 , 0.0] #время активности
+        """
+        self.led_pin_text = [] #название
+        self.led_pin = [] #пин
+        self.led_pin_ct = [] #состояние
+        self.led_pin_if = [] #режим
+        self.led_pin_mig = [] #мигание
+        self.led_pin_time = [] #время активности
+        
+        self.led_add("red",23)
+        self.led_add("green",24)
+        
+        
+        GPIO.setmode(GPIO.BCM)
+        for i, val in enumerate(self.led_pin):
+            GPIO.setup(val, GPIO.OUT)
+            GPIO.output(val, GPIO.HIGH)
+            self.led_(i,False)
+        
+        """
+        
+        
+    def led_reg(self, nled_pin=None):
+        try:
+            if nled_pin != None:
+                if isinstance(nled_pin, int):
+                    GPIO.setup(self.led_pin[nled_pin], GPIO.OUT)
+                    GPIO.output(self.led_pin[nled_pin], GPIO.HIGH)
+                    self.led_(nled_pin,False)
+                else:
+                    print("led_reg tip error")
+                    return -1
+            else:
+                for i, val in enumerate(self.led_pin):
+                    GPIO.setup(val, GPIO.OUT)
+                    GPIO.output(val, GPIO.HIGH)
+                    self.led_(i,False)
+        except: 
+            print("led_reg error")
+            return -2
+        return 0
+        
+    def led_add(self, Name : str, pin: int):
+        self.led_pin_text.append(Name)
+        self.led_pin.append(pin)
+        self.led_pin_ct.append(False)
+        self.led_pin_if.append(False)
+        self.led_pin_mig.append(False)
+        self.led_pin_time.append(0.0)
+        
+        
+    
+    def led_(self, nled_pin, on = False):
+        if self.led_pin_ct[nled_pin] != on:
+            if on == True:
+                if if_test_wimdovs:
+                    print("{} GPIO.LOW {}".format(self.led_pin[nled_pin] ,on))
+                else:
+                    GPIO.output(self.led_pin[nled_pin] , GPIO.LOW) # выкл HIGH
+                    #print("{} GPIO.LOW {}".format(led_pin,on))
+            else:
+                if if_test_wimdovs:
+                    print("{} GPIO.HIGH {}".format(self.led_pin[nled_pin] ,on))
+                else:
+                    GPIO.output(self.led_pin[nled_pin] , GPIO.HIGH) # выкл LOW
+                    #print("{} GPIO.HIGH {}".format(led_pin,on))
+            self.led_pin_ct[nled_pin] = on
+            
+    def led_mig(self, nled_pin, on):
+        
+        #print("led_mig")
+        if self.led_pin_mig[nled_pin] != on:
+            for i, val in enumerate(self.led_pin):
+                if nled_pin == i:
+                    #print("led_mig" , i)
+                    self.led_pin_mig[i] = on
+                else:
+                    self.led_pin_mig[i] = False
+                
+                
+    def led_sost(self, nled_pin):
+        return self.led_pin_if[nled_pin] or self.led_pin_time[nled_pin] != 0.0
+        
+    def led_all_one(self, nled_pin, on):
+        
+        for i, val in enumerate(self.led_pin):
+            if nled_pin == i:
+            
+                self.led_(i,on)
+                self.led_on_off(i,on)
+            else:
+                if self.led_sost(i): # если активен
+                    self.led_(i,False)
+                    self.led_on_off(i,False)    
+    
+    def led_all(self, on = False): # выкл свет  
+        for i, val in enumerate(self.led_pin):
+            self.led_(i,on)
+            self.led_on_off(i,on)
+            
+    def led_on_time(self, nled_pin, tim):
+        self.led_pin_if[nled_pin] = False
+        self.led_pin_time[nled_pin] = time.time()+tim
+        
+    def led_on_off(self, nled_pin, on):
+        self.led_pin_time[nled_pin] = 0.0
+        self.led_pin_if[nled_pin] = on
+        
+        
+        
+    def led_n(self, led_pin :int):
+        #print("led_n int")
+        return self.led_pin.index(led_pin)
+    
+    
+    def led_n(self, led_pin :str):
+        #print("led_n str")
+        return self.led_pin_text.index(led_pin)
+        
+    
+        
+    def led_namber(self, led_pin = None):
+        #print(led_pin)
+        try:
+            if isinstance(led_pin, str):
+                return self.led_pin_text.index(led_pin)
+            elif isinstance(led_pin, int):
+                return self.led_pin.index(led_pin)
+        except: 
+            print("led_namber tip error")
+            return -1
+        #print("led_namber")
+        #return self.led_n(led_pin)
+        
+    def Stop(self):
+        self.if_active = False 
+        
+    def run(self):
+        self.if_on = True
+        t = time.time()
+        self.if_active = True 
+        #print("1")
+        while self.if_active:
+            for i, val in enumerate(self.led_pin):
+                
+                
+                time_ = self.led_pin_time[i] - time.time() 
+                if time_ > 0 or self.led_pin_if[i]:
+                    #print("1 2")
+                    self.led_(i,True)
+                elif time_ <= 0 and self.led_pin_time[i] != 0.0: 
+                    self.led_on_off(i,False)
+                    t=time.time() 
+                    while time.time() - t<0.5:
+                        None
+                elif self.led_pin_mig[i]:
+                    self.led_all_one(i,True)
+                    for number in range(2):# колво мигов
+                        for number in range(0,1):
+                            #print(number == 0)
+                            self.led_on_off(i,number == 0)
+                            t=time.time() 
+                            while time.time() - t<1:
+                                None
+                        #self.led_on_off(i,False)
+                        #t=time.time() 
+                        #while time.time() - t<1:
+                        #    None
+                    self.led_mig(i, False)
+                else:
+                    #print("1 4")
+                    self.led_(i,False)
+                    
+                
+        self.led_all(False)
+        self.if_on = False
+     
+
+
+
+
+
 # True False
 If_Test_Foto = False # тест по фото
 If_Test_print_reset = False # вывод состояний ресетов
@@ -444,13 +776,37 @@ if __name__ == "__main__":
     if_on = False # при выполнении проверки на всё
     if_on_fase = False # найден ли id
     ime_out_ = 0
+    all_Thr = Thread_all()
+    
+    all_led = led_Thread(if_test_wimdovs)
+    #all_Thr.daemon = True
+    all_Thr.start()
+    all_led.start()
     while(Active):
-        temp_tepl_Raw, temp_tepl, tempPir = teplo()# получаем тепло 
+        #temp_tepl_Raw, temp_tepl, tempPir = teplo()# получаем тепло 
+        temp_tepl_Raw, temp_tepl, tempPir = all_Thr.teplo()
+        
+        
+        #print(height, width)
+        
+        
+        
+
+
+        
+        
+        
+        
+        
+        
+        
+        
         time_ = time.time() - time_temp1        
         if if_null: # обнуление
             time_out_ = 0
             #logging.info("Reset {}".format( time.time()))
-            led_all_off() # выкл свет  time_out = time_out_const # таймер на определение человека
+            #led_all_off() # выкл свет  time_out = time_out_const # таймер на определение человека
+            all_led.led_all(False)
             if_save_time = False # ускорение вывода
             time_temp1 = time.time() #начало сканирования лица
             del fase_RGB_200_200 # под скрин лица
@@ -473,10 +829,12 @@ if __name__ == "__main__":
                     id_hread = None
                     if_null_hread = False
         try:
-
             frame = frame_image(If_Test_Foto, ret , frame, image) # или скрин или фото
             x, y, w, h  = faces_x_y(frame, x , y, w, h)
-    
+            
+            
+            
+            
             if x + y + w + h != 0 and (min_w <=w or min_h <=h ) and not if_null_hread:
                 if If_Test_print_reset:print("next")
                 if not flag_id_on:
@@ -486,6 +844,7 @@ if __name__ == "__main__":
                         id_hread = Process(target=Id_to_face, args=(fase_RGB_200_200,return_Id_to_face))#, daemon=True
                         id_hread.start()#запуск потока по поиску в бд      
                 time_out_ = time_out-time_
+                
                 if not flag_id_on and  1.5 < time_out_ :
                     if not id_hread is None: # сущ ли процесс
                         if not id_hread.is_alive(): # заверш ли процесс
@@ -549,10 +908,10 @@ if __name__ == "__main__":
                             
                             #print("1 2")
                             
-                            if time.time() - time_Sql > 1 :
+                            if time.time() - time_Sql > 1 : # чтоб небыло повторов
                                 time_Sql = time.time()
-                            
-                            dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_pirom=temp_tepl_Raw)
+                                print("dataBase.push_data_log") 
+                                dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_pirom=temp_tepl_Raw)
                             
                             
                             #print("1 3")
@@ -560,11 +919,16 @@ if __name__ == "__main__":
                                 if_on = True # при выполнении проверки на всё
                             else:      
                                 logging.info("off id_person= {} |time:{}".format(id_person, time.time()))
-                                led_green(False)
-                                led_red(True)
+                                #all_led.led_on_time(all_led.led_namber("red"),0.5)
+                                all_led.led_mig(all_led.led_namber("red"),True)
+                                
+                                #led_green(False)
+                                #led_red(True)
                         else: 
-                            led_green(False)
-                            led_red(True)
+                            #all_led.led_on_time(all_led.led_namber("red"),0.5)
+                            all_led.led_mig(all_led.led_namber("red"),True)
+                            #led_green(False)
+                            #led_red(True)
                         if  not if_save  :
                             if_null = True
                             if If_Test_print_reset:print("reset not if_save")  
@@ -575,7 +939,7 @@ if __name__ == "__main__":
             else: 
                 if_null = True
                 if If_Test_print_reset:print("reset x-y-h-w")  
-
+                
             cv2.imshow('window', frame)
         except: 
             if_null = True
@@ -585,10 +949,13 @@ if __name__ == "__main__":
         if if_on:# если человек и температ, то действие
             logging.info("on id_person= {} :{}".format(id_person, time.time()))
             print("on")
+            all_Thr.If_Ok_Open()
             if_on = False # при выполнении проверки на всё
-            led_red(False)
-            led_green(True)
- 
+            #all_led.led_on_time(all_led.led_namber("green"),0.5)
+            all_led.led_mig(all_led.led_namber("green"),True)
+            #led_red(False)
+            #led_green(True)
+
             #  действие
             #time.sleep(2)
 
