@@ -21,29 +21,30 @@ else:
     tip_bd = 1
     #dict_connect_settings = os.path.join('.','rc','database')
     #dict_connect_settings =     pathDataBase = os.path.join('.','rc','database').
-    dict_connect_settings = './rc/database.bd'
+    dict_connect_settings = './app_thermometer/rc/database.bd'
+    #dict_connect_settings = os.path.abspath(os.path.join(os.getcwd(),'./rc/database.bd'))
 
 
-path_haarcascade = '/home/pi/project/termoBox/app_thermometer/rc/haarcascade_frontalface_default.xml'
-pathProject = '/home/pi/project/termoBox/expiriments'
+    #os.path.abspath(os.path.join(os.getcwd(),'rc','settings'))
+#path_haarcascade = '/home/pi/project/termoBox/app_thermometer/rc/haarcascade_frontalface_default.xml'
+path_haarcascade = os.path.abspath(os.path.join(os.getcwd(),'./app_thermometer/rc/haarcascade_frontalface_default.xml'))
+#pathProject = '/home/pi/project/termoBox/expiriments'
+pathProject = os.path.abspath(os.path.join(os.getcwd(),'./expiriments'))
 
 #Recognition
+
+
 face_detector = cv2.CascadeClassifier(path_haarcascade)
 
-k = 1
-path_cvm_model = os.path.join(pathProject, 'svm_model_{}.pk'.format(k))
-path_knn_model = os.path.join(pathProject, 'knn_model_{}.pk'.format(k))
 
-model_cvm = pickle.load(open(path_cvm_model, 'rb'))
-model_knn = pickle.load(open(path_knn_model, 'rb'))
-
-processing_recognition = processing_faceid(model_cvm, model_knn)
+processing_recognition = processing_faceid(pathProject)
 ##########################
 
 teplovizor = amg88()
 pirometr = MLX90614(SMBus(1))
 
 dataBase = BD(dict_connect_settings,tip_bd)
+
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)

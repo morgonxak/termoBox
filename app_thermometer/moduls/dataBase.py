@@ -1,4 +1,4 @@
-import psycopg2
+#import psycopg2
 import base64
 import numpy as np
 import cv2
@@ -80,7 +80,7 @@ class BD:
         '''
         data_time = str(datetime.datetime.now())
 
-        if person_id is None: person_id = '00000000-0000-0000-0000-000000000000'
+        if person_id is None or person_id == -1: person_id = '00000000-0000-0000-0000-000000000000'
 
         if person_id is None:
             recognition = 0

@@ -15,12 +15,13 @@
 0. OpenCV
 0. pyhton 3.7
 0. cmake
-
+    
 ## Установка:
 0. mkdir thermoBox && cd thermoBox
 0. python3 -m venv .env
 0. source .env/bin/activate
 0. pip install -r requirements.txt
+0. Второй вариант, если какие либо пакеты не могут поставится: cat requirements.txt | xargs -n 1 pip install
 0. Запуск: pyhton run.py
 
 ## Настройки распологаются: app_thermometer/__init__.py:

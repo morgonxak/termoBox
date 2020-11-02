@@ -2,10 +2,13 @@
 Модуль для проверки распознования миц и для дообучения CVM, Knn нейронных сетей
 '''
 import face_recognition
+import os
+import pickle
+from app_thermometer.moduls.trening_models_cvm_knn import branch_4
 
 class processing_faceid:
 
-    def __init__(self, model_cvm, model_knn):
+    def __init__(self, path_classificator):
         '''
 
         :param queue: Задания
@@ -16,8 +19,19 @@ class processing_faceid:
         :param door:
         '''
 
-        self.model_cvm, self.model_knn = model_cvm, model_knn
-        self.dict_res = {}
+
+        self.path_classification = path_classificator
+        self.model_cvm = None
+        self.model_knn = None
+        self.mode_update_classificator = False
+        self.load_classificator()
+        
+        #print("111111111")
+        #print("self.path_classification")
+        
+        if os.path.exists(os.path.abspath(os.path.join(self.path_classification, "./dataBase_1.pk"))):
+            self.update_classificator(self.path_classification)
+
 
 
     def get_descriptor_RGB(self, fase_RGB_200_200):
@@ -64,8 +78,36 @@ class processing_faceid:
 
         return person_id
 
+    def update_classificator(self, pathDatabese):
+        '''
+        Обновить классификатор
+        :return:
+        '''
+        print("Начало обновиления классификатора")
+        branch_4(os.path.join(pathDatabese, 'dataBase_1.pk'), pathDatabese)
+        print("Конец обновиления классификатора")
+        os.remove(os.path.join(pathDatabese, 'dataBase_1.pk'))
+        self.mode_update_classificator = True
+
+    def load_classificator(self):
+        '''
+        загрузка классификатора
+        :return:
+        '''
+        print("загрузка классификатора")
+        print(os.path.join(self.path_classification, 'knn_model_1.pk'))
+        self.model_knn = pickle.load(open(os.path.join(self.path_classification, 'knn_model_1.pk'), 'rb'))
+        self.model_cvm = pickle.load(open(os.path.join(self.path_classification, 'svm_model_1.pk'), 'rb'))
+
+        return 0
+
     def predict_freme(self, fase_RGB):
         # dict_res = {}
+
+        if self.mode_update_classificator:
+            self.mode_update_classificator = False
+
+            self.load_classificator()
 
         descriptor_fase_RGB = self.get_descriptor_RGB(fase_RGB)
 
