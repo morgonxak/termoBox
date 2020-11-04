@@ -13,8 +13,6 @@ import time
 import numpy 
 import logging ## лог
 
-logging.basicConfig(filename="sample.log", level=logging.INFO)
-
 #from multiprocessing.pool import ThreadPool
 from multiprocessing import Process , Queue #,Pool 
 #import tkinter as tk
@@ -101,7 +99,7 @@ def Str_ID(id_person):# текст на  id
             temp_text =  "Не распознан" 
             print("except: Str_ID ")
             
-            logging.info("except: Str_ID {}".format( time.time()))
+            logging.error("except: Str_ID {}".format( time.time()))
         
     return temp_text
 
@@ -192,13 +190,12 @@ def valid_var(tempPir, t_teplovizor):
 def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0): # цифры на  tepl
     temp_tepl_Raw = temp_tepl = tempPir = 0
     try:
-        #print("000")
         temp_tepl_Raw, temp_tepl = teplovizor.getMaxTemp()
-        #print(temp_tepl_Raw, temp_tepl)
         #temp_tepl+=3
     except: # Queue.Empty
-        logging.info("except: 111teplo (teplovizor.getMaxTemp)  {}".format( time.time()))   
-        pass
+        #pass
+        logging.error("except: teplo (1111111111teplovizor.getMaxTemp)  {}".format( time.time()))   
+        
     try:    
         if GPIO.input(18) == False:#у нас есть отжатая кнопа?  
             tempPir = round(pirometr.get_object_1(),1)
@@ -208,7 +205,7 @@ def teplo(temp_tepl_Raw=0, temp_tepl=0, tempPir=0): # цифры на  tepl
         
     except: # Queue.Empty
         #pass
-        logging.info("except: teplo (pirometr) {}".format( time.time()))   
+        logging.error("except: teplo (pirometr) {}".format( time.time()))   
     #print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
                         
     return temp_tepl_Raw, temp_tepl, tempPir
@@ -332,8 +329,6 @@ def cv2_rectangle_min_W_H(height, width):# размер минимальных �
 
 def cv2_height_width(frame, height=0, width=0):# размер скрина
     #height, width = 626, 537 #зармеры экрана
-    if not frame is None:
-        return  0, 0
     if height + width == 0:
         height = numpy.size(frame, 0)
         width = numpy.size(frame, 1)
@@ -428,8 +423,8 @@ def frame_image(If_Test_Foto, ret , frame, image): # или скрин или ф
             frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE) 
             #frame = frame[:, 185:455]
         else: 
-            logging.info("except: frame is None")                       
-            #raise Exception("frame is None")
+            logging.error("except: frame is None")                       
+            raise Exception("frame is None")
     else:
         frame = numpy.copy((image))
     return frame 
@@ -496,19 +491,14 @@ if __name__ == "__main__":
     frame_KOSTIL2 = 0
     pull_temperature_t=0
     pull_log_background_t=0
-    print("Программа активирована.")  
     while(Active):
-    
-        #print("111")
         temp_tepl_Raw, temp_tepl, tempPir = teplo()# получаем тепло 
-        #print("222")
         #print(temp_tepl_Raw, temp_tepl, tempPir)
         time_ = time.time() - time_temp1  
         if time.time() - pull_log_background_t > 10:
             pull_log_background_t = time.time()
-            #print("dataBase.pull_log_background")
-            qq = dataBase.pull_log_background((teplovizor.getreturnMaxrix()),[pirometr.get_object_1()])
-            #print("dataBase.pull_log_background = {}  |time: {}".format(qq, time.time()))
+            qq = dataBase.pull_log_background((teplovizor.getMaxrix()).tolist(),[pirometr.get_object_1()])
+            print("dataBase.pull_log_background = {}  |time: {}".format(qq, time.time()))
             logging.info("dataBase.pull_log_background = {}  |time: {}".format(qq, time.time()))    
         #frame_KOSTIL_if = True 
         if if_null: # обнуление
@@ -552,6 +542,7 @@ if __name__ == "__main__":
                 frame_KOSTIL2 = time_out-time_
             elif (0 <= (time.time() - frame_KOSTIL) <=  frame_KOSTIL2 ):
                 frame_KOSTIL_if = False
+                print("frame_KOSTIL_if = False")
             else:
                 x, y, w, h = x1, y1, w1, h1
                 frame_KOSTIL_if = True
@@ -560,15 +551,14 @@ if __name__ == "__main__":
                 
 
                
-
             if x + y + w + h != 0 and (min_w <=w or min_h <=h ) and not if_null_hread:
-                #print("11dataBase.pull_temperature")
-                if time.time() - pull_temperature_t > 1:
+                if time.time() - pull_temperature_t > 0.5:
                     pull_temperature_t = time.time()
-                    qq = dataBase.pull_temperature((teplovizor.getreturnMaxrix()),[pirometr.get_object_1()], GPIO.input(18), x + y + w + h != 0 and (min_w <=w or min_h <=h ) and frame_KOSTIL_if)
-                    #print("dataBase.pull_temperature = {}  |time: {}".format(qq, time.time()))
+                    qq = dataBase.pull_temperature((teplovizor.getMaxrix()).tolist(),[pirometr.get_object_1()], intGPIO.input(18), x + y + w + h != 0 and (min_w <=w or min_h <=h ) and frame_KOSTIL_if)
+                    print("dataBase.pull_temperature = {}  |time: {}".format(qq, time.time()))
                     logging.info("dataBase.pull_temperature = {}  |time: {}".format(qq, time.time()))
                             
+                
                 if If_Test_print_reset:print("next")
                 if not False: # flag_id_on:
                     if id_hread is None and frame_KOSTIL_if :#если процесс не сущ
@@ -576,10 +566,9 @@ if __name__ == "__main__":
                         clearQueue(return_Id_to_face) # обнуление очереди( костыль #1)
                         id_hread = Process(target=Id_to_face, args=(fase_RGB_200_200,return_Id_to_face))#, daemon=True
                         id_hread.start()#запуск потока по поиску в бд      
-                
                 time_out_ = time_out-time_ #+ int(not frame_KOSTIL_if)
-                #print(time_out_)
-                if (not False) and  1.5 < time_out_ :  # flag_id_on
+                
+                if not False and  1.5 < time_out_ :  # flag_id_on
                     if not id_hread is None: # сущ ли процесс
                         if not id_hread.is_alive(): # заверш ли процесс
                             try:
@@ -587,7 +576,7 @@ if __name__ == "__main__":
                                 
                                 if If_Test_print_reset:print("id_person_temp {}".format(id_person_temp))
                             except:
-                                logging.info("except: return_Id_to_face.get() {}".format( time.time()))
+                                logging.error("except: return_Id_to_face.get() {}".format( time.time()))
                                 if If_Test_print_reset:print("except: return_Id_to_face.get()")
                                 id_person_temp = -1
                                 id_hread.terminate()
@@ -641,23 +630,16 @@ if __name__ == "__main__":
                             #print("1 1")   
                             on_buzer(True)
                             
-                            
+                            #print("1 2")
                             
                             #if time.time() - time_Sql > 1 :
                             #    time_Sql = time.time()
                             
                             #dataBase.push_data_log(flag_disease, fase_RGB_200_200,  person_id=id_person, temp_pirom=tempPir, temp_teplovizor=temp_tepl, raw_pirom=temp_tepl_Raw)
-                            if id_person == -1: id_person = None
-                            #print("1 2")
-                            #print(fase_RGB_200_200)
-                            #print(flag_disease)
-                            #print(id_person)
+                            if person_id == -1: person_id = None
+                            dataBase.pull_log(fase_RGB_200_200,flag_disease,id_person)
                             
-                            qq = dataBase.pull_log(fase_RGB_200_200, flag_disease, id_person)
-                            #print("dataBase.pull_log = {}  |time: {}".format(qq, time.time()))
-                            logging.info("dataBase.pull_log = {}  |time: {}".format(qq, time.time()))
-                    
-                            #print("dataBase.push_data_log")
+                            print("dataBase.push_data_log")
                             if True: #(not flag_disease) and flag_id_on: # если человек и температ, то действие
                                 if_on = True # при выполнении проверки на всё
                                 
@@ -698,8 +680,7 @@ if __name__ == "__main__":
             #print("if_null 4")
             if_null = True # and frame_KOSTIL_if
             if If_Test_print_reset:print("reset except")    
-            logging.info("except: all except {}".format( time.time()))
-            print("except: all except {}".format( time.time()))
+            logging.error("except: except {}".format( time.time()))
             
         if if_on:# если человек и температ, то действие
             logging.info("on id_person= {} :{}".format(id_person, time.time()))
