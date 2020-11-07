@@ -25,6 +25,12 @@ class BD:
         #Соеденения с базой данных
         #if type(dict_connect_settings) != 'str':
         self.path_save_image = path_save_image
+        try:
+            os.makedirs(self.path_save_image)
+        except:
+            None
+        else:
+            print ("Успешно создана директория log")                              
 
         self.dict_connect_settings = os.path.abspath(os.path.join(os.getcwd(), dict_connect_settings))
         if type_BD == 0:
@@ -37,7 +43,7 @@ class BD:
             self.cur = self.con.cursor()
             
         except BaseException as e:
-            raise ValueError("Error create cursor " + str(e))
+            raise ValueError("Error create cursor " + str(e) + " ("+ self.dict_connect_settings+ ")")
     def connect_psycopg2(self, dict_connect_settings):
         try:
             con = psycopg2.connect(
@@ -60,7 +66,7 @@ class BD:
             con = sqlite3.connect(pathDataBase)
             return con
         except BaseException as e:
-                raise ValueError("Error sqlite3 connect BD: " + str(e))
+                raise ValueError("Error sqlite3 connect BD: " + str(e) + " ("+ self.dict_connect_settings+ ")")
         
         #except Error:
          #   print(Error)
