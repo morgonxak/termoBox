@@ -25,14 +25,12 @@ class processing_faceid:
         self.model_knn = None
         self.mode_update_classificator = False
         self.load_classificator()
-        
-        #print("111111111")
+       #print("111111111")
         #print("self.path_classification")
         
         #if os.path.exists(os.path.abspath(os.path.join(self.path_classification, "./dataBase_1.pk"))):
         #    self.update_classificator(self.path_classification)
         self.update_classificator()
-
 
 
     def get_descriptor_RGB(self, fase_RGB_200_200):
@@ -79,11 +77,13 @@ class processing_faceid:
 
         return person_id
 
+
     def update_classificator(self, pathDatabese = None):
         '''
         Обновить классификатор
         :return:
         '''
+
         if pathDatabese is None: pathDatabese = self.path_classification
         
         if os.path.exists(os.path.abspath(os.path.join(pathDatabese, "./dataBase_1.pk"))):
@@ -92,6 +92,11 @@ class processing_faceid:
             print("Конец обновиления классификатора")
             os.remove(os.path.join(pathDatabese, 'dataBase_1.pk'))
             self.mode_update_classificator = True
+
+        branch_4(os.path.join(pathDatabese, 'dataBase_1.pk'), pathDatabese)
+        os.remove(os.path.join(pathDatabese, 'dataBase_1.pk'))
+        self.mode_update_classificator = True
+
 
     def load_classificator(self):
         '''

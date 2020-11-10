@@ -30,6 +30,7 @@ pathProject = os.path.abspath(os.path.join(os.getcwd(),'./expiriments'))
 
 face_detector = cv2.CascadeClassifier(path_haarcascade)
 
+
 processing_recognition = processing_faceid(pathProject)
 ##########################
 
