@@ -103,12 +103,14 @@ class cv2_out_object():
         
         self.fontScale=self.r_w/2
     """
-    def out_rectangle(self):
+    def out_rectangle(self, x:int=0 ,y:int=0 ,w:int=0, h:int=0):
         '''
         ф-я вывода на экран квадрата выделяюшего лицо 
         '''
         #print(self.x , self.w, self.y , self.h)
-        if self.x + self.w+self.y + self.h >0: 
+        if x + w + y + h == 0:
+            x , w , y , h = self.x , self.w , self.y , self.h          
+        if x + w + y + h > 0: 
             cv2.rectangle(self.frame, (self.x, self.y), (self.x + self.w, self.y + self.h), self.color_rectangle, self.lineType)#вывод квадр
     
     def out_time(self, time):
