@@ -876,15 +876,14 @@ class teplo_Thread(threading.Thread): #работа с температурам�
                 return temp_text_telo
         if tip == 2 or tip == 0 :       
             if self.inputPir == 0 :   
-                temp_text_Pir = "Ваша температура по руке {}".format(self.tempPir)
-            if tip == 2 : return temp_text_Pir  
-        if tip == 3 or tip == 0 :           
-            if self.inputPir == 1 : 
+                #temp_text_Pir = "Ваша температура по руке {}".format(self.tempPir)   
+                temp_text_Pir = "Получаем данные"
+            else:
                 temp_text_Pir = "Поднесите руку"
-            if tip == 3 : return temp_text_Pir  
-        if tip == 4 or tip == 0 :    
+            if tip == 2 : return temp_text_Pir  
+        if tip == 3 or tip == 0 :    
             temp_sostoianie_tepl = self.valid_text()
-            if tip == 4 : return temp_sostoianie_tepl  
+            if tip == 3 : return temp_sostoianie_tepl  
         
         if tip == 0 : return temp_text_telo, temp_text_Pir, temp_sostoianie_tepl
         return ""

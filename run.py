@@ -138,13 +138,13 @@ class cv2_out_object():
         '''
         ф-я вывода строчки информации о нижнет теплеке
         '''
-        temp_text_Pir = self.teplo_Th.Str_teplo(3)# получаем текст на тепл
-        if self.inputPir == 1:   
-            self.cv2_text_separator_putTex_rectangle(text=temp_text_Pir, x=5, y=5, lins_saze_text=40, fontScale=0.99, direction=0, 
+        temp_text_Pir = self.teplo_Th.Str_teplo(2)# получаем текст на тепл
+        #if self.inputPir == 1:   
+        self.cv2_text_separator_putTex_rectangle(text=temp_text_Pir, x=5, y=5, lins_saze_text=40, fontScale=0.99, direction=0, 
                                                     color_text = self.color_text, color_rectangle = self.color_rectangle, 
                                                     if_all_width_frame = True, Align = 1)
-            return 1  
-        return 0                                        
+        #    return 1  
+        return self.inputPir == 1                                        
     
     def out_text_end(self):
         '''
@@ -167,9 +167,10 @@ class cv2_out_object():
                 
             else: 
             """
-            self.cv2_text_separator_putTex_rectangle(text=self.Str_ID(), x=x, y=y, direction=0, lins_saze_text=lins_saze_text, fontScale=fontScale, 
-                                                    color_text = self.color_text, color_rectangle = self.color_green  if if_ else self.color_read, if_all_width_frame = True, 
-                                                    Align = 1 )
+            Str_ = "Все хорошо, проходите" #self.Str_ID()
+            self.cv2_text_separator_putTex_rectangle(text=Str_, x=x, y=y, direction=0, lins_saze_text=lins_saze_text, fontScale=fontScale, 
+                                                    color_text = self.color_text, color_rectangle = self.color_green, if_all_width_frame = True, 
+                                                    Align = 1 ) #  if if_ else self.color_read
             return True #True                                        
         elif self.teplo_Th.inputPir == 1:
             self.cv2_text_separator_putTex_rectangle(text="Ошибка измерения. Рука не обнаружена.", x=x, y=y, direction=0, lins_saze_text=lins_saze_text, 
