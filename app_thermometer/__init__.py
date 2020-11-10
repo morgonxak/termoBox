@@ -180,6 +180,7 @@ class frame_Thread(threading.Thread): #работа с камерой
         self.id_person_out = self.id_person # id_person
          
         self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо
+        
     def next_(self):
         self.out_in = True
     
@@ -224,7 +225,9 @@ class frame_Thread(threading.Thread): #работа с камерой
                 if self.x_y_w_h.if_(self.min_w_h): # and not self.if_null_hread:
                     x , y , w, h = self.x_y_w_h.get_() 
                     #cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
+                    #print("self.hread()1 {}".format( self.id_person))
                     self.hread()
+                    #print("self.hread()2 {}".format( self.id_person))
                 #self.frame = self.frame_orientation(self.frame)
                 if self.out_in: 
                     self.out_in = False       
@@ -243,6 +246,7 @@ class frame_Thread(threading.Thread): #работа с камерой
                 pass
 
         if not if_zeroing:   
+            #if not(self.id_person is None or self.id_person == -1)
             if self.id_hread is None :# and self.id_person is None:# не существует ли процесс 
                 if self.frame_delay_if and not self.frame is None:
 
@@ -252,7 +256,7 @@ class frame_Thread(threading.Thread): #работа с камерой
                     #self.id_hread = Process(target=self.Id_to_face, args=(self.fase_RGB_200_200,self.return_Id_to_face))#, daemon=True
                     self.id_hread = Process(target=self.Id_to_face)#, daemon=True
                     self.id_hread.start()#запуск потока по поиску в бд  
-            elif not self.id_hread is None: # существует ли процесс 
+            elif not self.id_hread is None : # существует ли процесс 
                 if not self.id_hread.is_alive(): # завершён ли процесс        
                     try:
                         id_person_temp = self.return_Id_to_face.get() # вытаскиваем ID
@@ -271,7 +275,7 @@ class frame_Thread(threading.Thread): #работа с камерой
                         except:
                             logging.info("except: iframe_Thread.id_hread.close {}".format( time.time()))
                             print("Error frame_Thread.id_hread.close()")
-                        self.id_hread = None
+                    self.id_hread = None
         else:
             if not self.id_hread is None: # сущ ли процесс
                 if self.id_hread.is_alive():    
@@ -301,7 +305,7 @@ class frame_Thread(threading.Thread): #работа с камерой
         
         self.fase_RGB_200_200 = None # под скрин лица
             
-        self.frame_out = self.frame
+        #self.frame_out = self.frame
         self.x_y_w_h_out.set_() #положение лица
         self.frame_delay_if_out = True #отсутствие задержки 
         self.id_person_out = None # id_person    
@@ -677,8 +681,8 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         self.teplovizor = amg88() # подключение верхнего тепловизора 
         self.pirometr = MLX90614(SMBus(1)) # подключение нижнего тепловизора
         #границы допустимого
-        self.___min___ = 29.0
-        self.___max___ = 37.2
+        self.___min___ = 20.0
+        self.___max___ = 39.2
 
         # управление
         self.time = 0.3 # шаг повторения по времени
@@ -693,14 +697,20 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         self.next_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
         self.next_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
         self.next_tempPir = 0 # темповая переменая для pirometr
-        self.next_inputPir = 1 # темповая переменая наличия руки (дачик растояния)    
+        self.next_inputPir = 1 # темповая переменая наличия руки (дачик растояния)
+
+        #ok
+        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
+        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
+        self.ok_tempPir = 0 # темповая переменая для pirometr
+        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния)        
         
     def ___teplo___(self): 
         '''
         получает и возвращает данные с модумей
         '''
         temp_tepl_Raw = temp_tepl = tempPir = 0
-        inputPir = False 
+        inputPir = 1 
         try:
             temp_tepl_Raw, temp_tepl = self.teplovizor.getMaxTemp()
         except: # Queue.Empty
@@ -727,13 +737,20 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         '''
         переводит темповые переменные в рабочие
         '''
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
     
     def teplo(self):
         '''
         возвращает рабочие переменные
         '''
         return self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir
+        
+    def zeroing(self):    
+        #ok
+        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
+        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
+        self.ok_tempPir = 0 # темповая переменая для pirometr
+        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния)  /0 - есть рука / 1 - нет руки
        
     def ___valid_None___(self, t_teplovizor, tempPir):
         '''
@@ -752,7 +769,7 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         if t_teplovizor == 0 or tempPir == 0:
             return 0
         tepl = t_teplovizor
-        if self.inputPir:
+        if self.inputPir == 0:
             tepl = round(numpy.min([tepl, tempPir]), 1)
         return tepl
         
@@ -765,7 +782,7 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         if t_teplovizor == 0 or tempPir == 0:
             return 0
         tepl = t_teplovizor
-        if self.inputPir:
+        if self.inputPir == 0:
             tepl= round(numpy.max([tepl, tempPir]), 1)
         return tepl
 
@@ -774,7 +791,9 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         вохвращает: входят ли рабочие минимальные данные в границы допустимого   
         '''
         tepl = self.valid_min(t_teplovizor, tempPir)
-        if self.___min___ > tepl < self.___max___:
+        #print( tepl )
+        #print(self.___min___ <= tepl <= self.___max___)
+        if self.___min___ <= tepl <= self.___max___:
             return True
         else:
             return False
@@ -784,7 +803,7 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         вохвращает: входят ли рабочие максимальные данные в границы допустимого   
         '''
         tepl = self.valid_max(t_teplovizor, tempPir)
-        if self.___min___ > tepl < self.___max___:
+        if self.___min___ <= tepl <= self.___max___:
             return True
         else:
             return False    
@@ -793,9 +812,29 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         '''
         вохвращает: входят ли рабочие данные в границы допустимого   
         '''
+        
+        #print( self.if_valid_max(tempPir, t_teplovizor)  )
+        #print( self.if_valid_min(tempPir, t_teplovizor)  )
+        #print(self.if_valid_max(tempPir, t_teplovizor) and self.if_valid_min(tempPir, t_teplovizor) )
         return self.if_valid_max(tempPir, t_teplovizor) and self.if_valid_min(tempPir, t_teplovizor) 
 
+    def if_ok(self, temp_tepl_Raw,  t_teplovizor, tempPir , inputPir ): 
+        '''
+        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
+        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
+        self.ok_tempPir = 0 # темповая переменая для pirometr
+        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния) /0 - есть рука / 1 - нет руки
+        '''
         
+        #if self.if_valid():
+        #self.ok_temp_tepl_Raw =
+        #if (self.if_valid(tempPir, t_teplovizor) or not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)
+        if ((self.if_valid(tempPir, t_teplovizor) and inputPir == 0) or (not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)) and inputPir == 0) : 
+            self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, inputPir
+        self.ok_inputPir = inputPir  
+        return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir
+
+    
     def valid_led(self,*led:pin_Thread, pin_time = 0.5):
         '''
         led: получаем поток pin_Thread, для управления пинами
@@ -838,13 +877,17 @@ class teplo_Thread(threading.Thread): #работа с температурам�
         if tip == 2 or tip == 0 :       
             if self.inputPir == 0 :   
                 temp_text_Pir = "Ваша температура по руке {}".format(self.tempPir)
-            else: 
-                temp_text_Pir = "Поднесите руку"
             if tip == 2 : return temp_text_Pir  
-        if tip == 3 or tip == 0 :    
+        if tip == 3 or tip == 0 :           
+            if self.inputPir == 1 : 
+                temp_text_Pir = "Поднесите руку"
+            if tip == 3 : return temp_text_Pir  
+        if tip == 4 or tip == 0 :    
             temp_sostoianie_tepl = self.valid_text()
-            if tip == 3 : return temp_sostoianie_tepl  
-        return temp_text_telo, temp_text_Pir, temp_sostoianie_tepl
+            if tip == 4 : return temp_sostoianie_tepl  
+        
+        if tip == 0 : return temp_text_telo, temp_text_Pir, temp_sostoianie_tepl
+        return ""
     
     def valid_var(self):
         return self.if_valid()
