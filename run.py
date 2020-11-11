@@ -37,8 +37,8 @@ else:
 
 
 class cv2_out_object():
-    def __init__(self, BD:BD, frame_Th:frame_Thread, teplo_Th:teplo_Thread, pin_Th:pin_Thread):
-        self.dataBase = BD
+    def __init__(self, dataBase:BD, frame_Th:frame_Thread, teplo_Th:teplo_Thread, pin_Th:pin_Thread):
+        self.dataBase = dataBase
         self.color_blue = (255, 0, 0) 
         self.color_green = (0, 255, 0) 
         self.color_read = (0, 0, 255) 
@@ -408,7 +408,7 @@ if __name__ == "__main__":
     
     
     t = time.time()
-    
+    time_save_bd = 0
     frame_Th = frame_Thread(If_Test_Foto) #данные с камеры и часить обработки
     #frame_Th.frame_time_out = frame_time
     frame_Th.start()#старт камера
@@ -448,21 +448,22 @@ if __name__ == "__main__":
             if x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
                 #print("wwwwwwwwwww")
                 #print(time.time() - t)
-                if time.time() - t < frame_time :
+                time_if = time.time() - t
+                if time_if < frame_time :
                 
                     teplo_Th.next_()
                     
                     #print(teplo_Th.teplo())
                     cv2_out_ob.out_rectangle()
                     cv2_out_ob.out_name()
-                    cv2_out_ob.out_time(frame_time-(time.time() - t)+0.4)
+                    cv2_out_ob.out_time(frame_time-(time_if)+0.4)
                     leg = (cv2_out_ob.out_text_if_teplo())
                     if leg == 0:
                         pin_Th.pin_mig("blue", True)#
                     else:
                         pin_Th.pin_mig("red", True)
                     
-                elif time.time() - t < time_out_all:
+                elif time_if < time_out_all:
                     if cv2_out_ob.out_text_end():
                         pin_Th.pin_on_off("green", True)
                     else:
