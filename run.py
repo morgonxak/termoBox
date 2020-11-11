@@ -356,8 +356,69 @@ class cv2_out_object():
     
 
 
+ 
 
-
+class save_numpy_bd_object():
+    def __init__(self, dataBase:BD,  teplo_Th:teplo_Thread):
+        self.dataBase = dataBase
+        self.teplo_Th = teplo_Th 
+        self.time_save_bd = 5*60 # время на отправку в бд
+        self.t_save_bd = 0 # time.time() # счёчик времени на отправку в бд
+        
+        self.t = time.time() #время 1го прохода
+        self.time = 30 # 2 #миним время 1го прохода
+        
+        self.list_len = 35 #
+        self.list_save_Raw = [33] # для мах теплика
+        self.list_save_Pir = [33] # для пирометра
+        self.IfOutPrint = True
+    def ___add___(self): 
+        
+        
+        Raw, t_teplovizor, Pir, inputPir = self.teplo_Th.teplo()
+        
+        
+        #if inputPir == 1: # /0 - есть рука / 1 - нет руки
+        self.dataBase.pull_log_background(self.teplo_Th.temp_tepl_arr,[Pir]) # 
+    
+        #print(Raw, Pir)
+        if len(self.list_save_Raw) >= self.list_len:
+            self.list_save_Raw.pop(0)
+        if len(self.list_save_Pir) >= self.list_len:
+            self.list_save_Pir.pop(0)
+        self.list_save_Raw.append(Raw)
+        self.list_save_Pir.append(Pir)
+        #print(self.list_save_Raw[-1], self.list_save_Pir[-1])
+        #print("_________")
+        if self.IfOutPrint:
+            self.IfOutPrint = False
+            print("save_numpy_bd_object rewritten")
+        
+        
+    def ___avg___(self,list_): 
+        return sum(list_) / len(list_)
+        
+    def out_last(self):
+        return self.list_save_Raw[-1], self.list_save_Pir[-1]
+        
+    def save(self):
+    
+        if time.time() - self.t >= self.time:
+            self.t = time.time()
+            
+            list_save_Raw, list_save_Pir = self.out_last()
+            self.teplo_Th.next_(list_save_Raw, list_save_Pir )
+            self.___add___()
+            
+            
+            if time.time() - self.t_save_bd >= self.time_save_bd and ( len(self.list_save_Raw) >= self.list_len and len(self.list_save_Pir) >= self.list_len ):
+                self.t_save_bd = time.time() 
+                #self.dataBase.pull_calibration_threshold(self.___avg___(self.list_save_Raw),self.___avg___(self.list_save_Pir) )
+                
+                
+            teplo_Th.zeroing()    
+        
+   
 
 
 
@@ -379,10 +440,10 @@ if __name__ == "__main__":
     # без обнуления   
     time_out_all = 8 # таймер на цикл
 
+    frame_time = 5 # время на распознование
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
     color = (255, 255, 255) # цвет задника
-    frame_time = 5 # время на распознование
     # с особым обнулением
 
     
@@ -408,18 +469,20 @@ if __name__ == "__main__":
     
     
     t = time.time()
-    time_save_bd = 0
+    
     frame_Th = frame_Thread(If_Test_Foto) #данные с камеры и часить обработки
     #frame_Th.frame_time_out = frame_time
     frame_Th.start()#старт камера
     
-    teplo_Th = teplo_Thread() #данные с тепловизеров
+    teplo_Th = teplo_Thread(dataBase) #данные с тепловизеров
     teplo_Th.start()#старт
     
     pin_Th = pin_Thread()#управление pin
     pin_Th.start()#старт
     
-    cv2_out_ob = cv2_out_object(dataBase, frame_Th,teplo_Th,pin_Th)
+    cv2_out_ob = cv2_out_object(dataBase, frame_Th, teplo_Th, pin_Th)
+    
+    save_numpy_bd_ob = save_numpy_bd_object(dataBase, teplo_Th)
     #cv2_out_ob.next_()
     
     #Open_Th = Open_Thread() #управление действием при удачном прохождении
@@ -427,12 +490,12 @@ if __name__ == "__main__":
     
     #def zeroing():
     #    t = time.time()
-    
+    if_save_bd = True
     while(Active):
         
         if if_null:
             if_null = False
-            t = time.time()
+            
 
         #if not x_y_w_h is None :
         #    x_y_w_h.set_()
@@ -442,56 +505,68 @@ if __name__ == "__main__":
         frame_Th.next_()
         frame, x_y_w_h,  frame_delay_if, id_person,fase_RGB_200_200 = frame_Th.out()
         frame = frame_Th.frame_orientation(frame) 
-        if not frame is None :
+        
+            
+        if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
             cv2_out_ob.next_()
             #print(x_y_w_h.get_())
-            if x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
-                #print("wwwwwwwwwww")
-                #print(time.time() - t)
-                time_if = time.time() - t
-                if time_if < frame_time :
+            #print("wwwwwwwwwww")
+            #print(time.time() - t)
+            time_if = time.time() - t
+            if time_if < frame_time :
+                if_save_bd = True
+                list_save_Raw, list_save_Pir = save_numpy_bd_ob.out_last()
                 
-                    teplo_Th.next_()
-                    
-                    #print(teplo_Th.teplo())
-                    cv2_out_ob.out_rectangle()
-                    cv2_out_ob.out_name()
-                    cv2_out_ob.out_time(frame_time-(time_if)+0.4)
-                    leg = (cv2_out_ob.out_text_if_teplo())
-                    if leg == 0:
-                        pin_Th.pin_mig("blue", True)#
-                    else:
-                        pin_Th.pin_mig("red", True)
-                    
-                elif time_if < time_out_all:
-                    if cv2_out_ob.out_text_end():
-                        pin_Th.pin_on_off("green", True)
-                    else:
-                        pin_Th.pin_on_off("red", True)
-                    
-                    
-                #elif time.time() - t < time_out_all+3:
-                #    pin_Th.pin_all(False)
-                #    None
+                #print(list_save_Raw, list_save_Pir)
+                teplo_Th.next_(list_save_Raw, list_save_Pir )
+                
+                #print(teplo_Th.teplo())
+                cv2_out_ob.out_rectangle()
+                cv2_out_ob.out_name()
+                cv2_out_ob.out_time(frame_time-(time_if)+0.4)
+                leg = (cv2_out_ob.out_text_if_teplo())
+                if leg == 0:
+                    pin_Th.pin_mig("blue", True)#
                 else:
-                    frame_Th.zeroing()
-                    teplo_Th.zeroing()
-                    pin_Th.pin_all(False)
-                    if_null = True 
-                    #print("!!!!!!")
-                    None
-                #if time.time() - t > time_out_all:
-                #    frame_Th.zeroing() 
-            else :if_null = True 
-            
-            #cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
-               
+                    pin_Th.pin_mig("red", True)
+                
+            elif time_if < time_out_all:
+                #print(time_if)
+                #print(time_out_all)
+                #print(time_if < time_out_all)
+                #print("OOOOOOO")
+                if cv2_out_ob.out_text_end():
+                    pin_Th.pin_on_off("green", True)
+                else:
+                    pin_Th.pin_on_off("red", True)
+                if if_save_bd:
+                    if_save_bd = False
+                    dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
+                    dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.ok_temp_tepl_Raw], teplo_Th.ok_inputPir,  frame_delay_if)
+                
+            #elif time.time() - t < time_out_all+3:
+            #    pin_Th.pin_all(False)
+            #    None
+            else:
+                frame_Th.zeroing()
+                teplo_Th.zeroing()
+                pin_Th.pin_all(False)
+                #t = time.time()
+                if_null = True 
+                #print("!!!!!!")
+                None
 
-            #frame = cv2_out_ob.get_()
-            if not frame is None :
-                #frame = cv2.UMat(frame)
-                cv2.imshow('window', frame)
-        else :if_null = True 
+        else:
+            save_numpy_bd_ob.save() # обсчёт и сейв окружающей
+
+
+           
+
+        #frame = cv2_out_ob.get_()
+        if not frame is None :
+            #frame = cv2.UMat(frame)
+            cv2.imshow('window', frame)
+        
         
         """
         #pin_Th.pin_mig(pin_Th.pin_namber("red"), True)

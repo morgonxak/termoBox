@@ -1,61 +1,35 @@
-import psycopg2
+# import psycopg2
 import cv2
 import datetime
 import uuid
 import os
 import sqlite3
 
-
-if 1==2:
-    dict_connect_settings = {"database": "thermobox",
-                             "user": "pi",
-                             "password": "asm123",
-                             "host": "10.10.22.214",
-                              "port": "5432"}
-else:
-    dict_connect_settings = '/home/dima/Загрузки/termoBox-9_9_20/database.bd'
-
-path_save_image = '/home/pi/project/log'
-
 class BD:
-    def __init__(self, dict_connect_settings, type_BD=1, path_save_image=path_save_image):
-        #0 - psycopg2
-        #1 - sqlite3
-
+    '''
+    Класс для работы с основной базой данных пользователя
+    '''
+    def __init__(self, path_bd_file:str, path_save_image:str = "/home/pi/project/log"):
+        
+        #print(path_save_image)
         #Соеденения с базой данных
-        #if type(dict_connect_settings) != 'str':
         self.path_save_image = path_save_image
         try:
             os.makedirs(self.path_save_image)
-        except:
-            None
+        except OSError:
+            pass
         else:
-            print ("Успешно создана директория log")                              
+            print("Успешно создана директория log")
 
-        self.dict_connect_settings = os.path.abspath(os.path.join(os.getcwd(), dict_connect_settings))
-        if type_BD == 0:
-            self.con = self.connect_psycopg2(self.dict_connect_settings)
-        elif type_BD == 1:
-            self.con = self.connect_sqlite3(self.dict_connect_settings)
-        else:
-           raise ValueError("Error type_BD {}".format(type_BD)) 
+        self.dict_connect_settings = os.path.abspath(os.path.join(os.getcwd(), path_bd_file))
+
         try:
+            self.con = self.connect_sqlite3(self.dict_connect_settings)
             self.cur = self.con.cursor()
             
         except BaseException as e:
-            raise ValueError("Error create cursor " + str(e) + " ("+ self.dict_connect_settings+ ")")
-    def connect_psycopg2(self, dict_connect_settings):
-        try:
-            con = psycopg2.connect(
-                database=dict_connect_settings['database'],
-                user=dict_connect_settings['user'],
-                password=dict_connect_settings['password'],
-                host=dict_connect_settings['host'],
-                port=dict_connect_settings['port'])
-            return con
-        except BaseException as e:
-            raise ValueError("Error psycopg2 connect BD: " + str(e))
-    
+            raise ValueError("Error create cursor {} path {}".format(e, self.dict_connect_settings))
+
     def connect_sqlite3(self, pathDataBase:str):
         '''
         Соеденяемся с базой данных
@@ -64,100 +38,84 @@ class BD:
         '''
         try:
             con = sqlite3.connect(pathDataBase)
-            return con
         except BaseException as e:
-                raise ValueError("Error sqlite3 connect BD: " + str(e) + " ("+ self.dict_connect_settings+ ")")
-        
-        #except Error:
-         #   print(Error)
+                raise ValueError("Error sqlite3 connect BD: {}".format(e, self.dict_connect_settings))
+        return con
 
-    #+++++++++++
-    def get_people_name_by_person_id(self, person_id):
+    def get_people_name_by_person_id(self, person_id: str):
         '''
-        Получает пользователя по уникальному ключу
-        :param person_id:
-        :return first_name:
+        Получает имя пользователя по уникальному ключу
+        :param person_id: str
+        :return first_name: str - хороший результат -1 Ошибка или нет такого пользователя
         '''
         try:
-            self.cur.execute("SELECT first_name from users WHERE person_id = '{}'".format(person_id))
+            self.cur.execute("SELECT first_name from users WHERE personId = '{}'".format(person_id))
 
-            rows = self.cur.fetchall()
+            row = self.cur.fetchone()[0]
+
         except BaseException as e:
-            raise ValueError("Error get Users info: " + str(e))
+            print(ValueError("Error get_people_name_by_person_id: {}".format(e)))
+            return -1
         else:
-            return rows[0][0]
+            return row
 
-    def pull_users(self, person_id, last_name, first_name, middle_name):
+    def is_person_id(self, person_id: str):
         '''
-        Отправляем данные в базу
-        :param person_id:
-        :param last_name:
-        :param first_name:
-        :param middle_name:
-        middle_name
-        :return:
-        '''
-
-        self.cur.execute(
-            "INSERT INTO users (person_id, last_name, first_name, middle_name, mode_skip) VALUES ('{}', '{}', '{}', '{}', '{}')".format(
-                person_id, last_name, first_name, middle_name, 0)
-        )
-        self.con.commit()
-
-    def is_person_id(self, person_id):
-        '''
-        Присутствует ли пользователь в базе
+        Есть ли пользователь в базе
         :param person_id:
         :return bool:
         '''
         try:
-            self.cur.execute("SELECT person_id  from users WHERE person_id = '{}'".format(person_id))
+            self.cur.execute("SELECT personId from users WHERE personId = '{}'".format(person_id))
 
-            rows = self.cur.fetchall()
-        except BaseException as e:
-            raise ValueError("Error get Users info: " + str(e))
-        else:
-            if len(rows) != 0:
+            row = self.cur.fetchall()
+            if len(row) != 0:
                 return True
             else:
                 return False
 
+        except BaseException as e:
+            print(ValueError("Error get Users info: " + str(e)))
+            return -1
+
     def pull_log(self, frame, flag_disease, person_id=None):
         '''
         Отправляет данные логирования
+        Формат сохранения изображения:
+        Уникальный идентификатор_дата время_болен_распознан нет_
         :param frame: Кадр для сохранения
         :param flag_disease: больной пользователь или нет bool
         :param person_id: ели none то пользователь не известный
         :return: 0 все хорошо, -1 что то не так
         '''
         try:
+
             data_time = str(datetime.datetime.now())
+            recognition = int(not person_id is None)
             if person_id is None: person_id = '00000000-0000-0000-0000-000000000000'
-            
-            if person_id is None:
-                recognition = 0
-            else:
-                recognition = 0
-
-            if flag_disease:
-                flag_disease = 1
-            else:
-                flag_disease = 0
 
 
-            name_image = '{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), flag_disease, recognition)
-            cv2.imwrite(os.path.join(path_save_image, name_image + '.jpg'), frame)
+            name_image = '{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), int(flag_disease), recognition)
+            #print(self.path_save_image)
+            str_ =  os.path.join(self.path_save_image, name_image + '.jpg')
+            try:
+                cv2.imwrite(str_, frame)
+            except BaseException as e:
+                print("error save image {} {}".format(str_, e))
 
             self.cur.execute(
                 "INSERT INTO log (person_id, data_time, name_image) VALUES ('{}', '{}', '{}')".format(person_id, data_time, name_image)
             )
+
             self.con.commit()
+
         except ZeroDivisionError as e:
             print("Error pull log {}".format(e))
             return -1
+
         return 0
 
-    def pull_temperature(self, data_teplovizor, data_pirometr, is_hand, is_fase): #list
+    def pull_temperature(self, data_teplovizor: list, data_pirometr: list, is_hand: bool, is_fase: bool):
         '''
         Заполняет базу с температурами
         :param data_teplovizor: Масив с температурами с тепловизора
@@ -166,21 +124,12 @@ class BD:
         :param is_fase: Данные о лице
         :return: 0 все хорошо, -1 что то не так
         '''
-        if is_hand:
-            is_hand = 1
-        else:
-            is_hand = 0
-
-        if is_fase:
-            is_fase = 1
-        else:
-            is_fase = 0
 
         try:
             data_time = str(datetime.datetime.now())
             self.cur.execute(
                 "INSERT INTO log_temperature (data_time, temperature_teplovizor, temperature_pirometr, is_hand, is_face) VALUES ('{}', '{}', '{}', '{}', '{}')".format(
-                    data_time, str(data_teplovizor), str(data_pirometr), is_hand, is_fase)
+                    data_time, str(data_teplovizor), str(data_pirometr), int(is_hand), int(is_fase))
             )
             self.con.commit()
         except BaseException as e:
@@ -188,7 +137,7 @@ class BD:
             return -1
         return 0
 
-    def pull_log_background(self, data_teplovizor, data_pirometr): #:list
+    def pull_log_background(self, data_teplovizor: list, data_pirometr: list):
         '''
         Заполняем данные окружающий среды
         :param data_teplovizor: данные тепловизора
@@ -207,41 +156,185 @@ class BD:
             return -1
         return 0
 
-    def test(self):
+    def pull_calibration_threshold(self, threshold_teplovizor: float, threshold_pir: float):
         '''
-        Для заполнения базы пользователей
+        Заполняем данные калибровки хранит коэфициент
+        :param threshold_teplovizor:
+        :param threshold_pir:
         :return:
         '''
-        url = "http://82.179.15.125:10101/IntegrationService/IntegrationService.asmx"
-        # domain = '\xd0\x9a\xd0\xb5\xd0\xbc\xd0\x93\xd0\xa3'
-        domain = 'КемГУ'
-        userName = 'test'
-        password = '123456'
-        path_dataset = r'/media/dima/Новый том/ptotoRGBD_2/faceid_train'
+        try:
+            data_time = str(datetime.datetime.now())
+            self.cur.execute(
+                "INSERT INTO calibration_threshold (data_time, threshold_teplovizor, threshold_pir) VALUES ('{}', '{}', '{}')".format(
+                    data_time, threshold_teplovizor, threshold_pir)
+            )
+            self.con.commit()
+            return 0
+        except BaseException as e:
+            print("Error pull_calibration_threshold {}".format(e))
+            return -1
 
-        import datetime
-        from expiriments.pull_info_iser.Parsec_API import prosecApi
-        obj_BD = BD(dict_connect_settings)
-        test = prosecApi(url, userName, password, domain)
+    def get_calibration_threshold(self):
+        '''
+        Получает данные о последней колибровки
+        :return: (ДатаВремя, Температура пирометра, температура тепловизора)
+        '''
+        try:
+            self.cur.execute("SELECT max(id)  from calibration_threshold")
+            row = self.cur.fetchone()[0]
 
-        for count, person_id in enumerate(os.listdir(path_dataset)):
-            infoUser = test.get_photo_by_person_id(person_id)
-            try:
-                last_name = infoUser[person_id]['LAST_NAME']
-                first_name = infoUser[person_id]['FIRST_NAME']
-                middle_name = infoUser[person_id]['MIDDLE_NAME']
-                print(count, person_id, last_name, first_name, middle_name)
-                try:
-                    obj_BD.pull_users(person_id, last_name, first_name, middle_name)
-                except sqlite3.IntegrityError:
-                    print("Пользователь уже в базе")
-            except BaseException as e:
-                print("error: {}".format(e))
+            self.cur.execute("SELECT data_time, threshold_pir, threshold_teplovizor  from calibration_threshold WHERE id = '{}'".format(row))
+
+            rows = self.cur.fetchall()
+            data_time, threshold_pir, threshold_teplovizor = rows[0]
+            return data_time, threshold_pir, threshold_teplovizor
+
+        except BaseException as e:
+            print(ValueError("Error get_calibration_threshold: {}".format(e)))
+
+class PASS_OFFICE(BD):
+    def __init__(self, path_bd_file: str, path_save_image: str):
+        super(PASS_OFFICE, self).__init__(path_bd_file, path_save_image)
+
+    def pull_users(self, person_id, last_name, first_name, middle_name):
+        '''
+        Отправляем данные в базу
+        :param person_id:
+        :param last_name:
+        :param first_name:
+        :param middle_name:
+        middle_name
+        :return:
+        '''
+
+        self.cur.execute(
+            "INSERT INTO users (personId, last_name, first_name, middle_name, mode_skip) VALUES ('{}', '{}', '{}', '{}', '{}')".format(
+                person_id, last_name, first_name, middle_name, 0)
+        )
+        self.con.commit()
+
+class DATA_BASE_TELEGRAM_BOT(BD):
+
+    def __init__(self, dataBase_file: str, path_save_image: str):
+
+        super(DATA_BASE_TELEGRAM_BOT, self).__init__(dataBase_file, path_save_image)
+
+        self.con = self.connect_sqlite3(dataBase_file)
+        self.cur = self.con.cursor()
+        self.last_sick = None
+
+    def get_subscriptions(self, status=True):
+        """Получаем всех активных подписчиков бота"""
+        with self.con:
+            return self.cur.execute("SELECT * FROM `telegram_bot` WHERE `status` = ?", (status,)).fetchall()
+
+    def subscriber_exists(self, user_id):
+        """Проверяем, есть ли уже юзер в базе"""
+        with self.con:
+            result = self.cur.execute('SELECT * FROM `telegram_bot` WHERE `user_id` = ?', (user_id,)).fetchall()
+            return bool(len(result))
+
+    def add_subscriber(self, user_id, status=True):
+        """Добавляем нового подписчика"""
+        with self.con:
+            return self.cur.execute("INSERT INTO `telegram_bot` (`user_id`, `status`) VALUES(?,?)",
+                                       (user_id, status))
+
+    def update_subscription(self, user_id, status):
+        """Обновляем статус подписки пользователя"""
+        with self.con:
+            return self.cur.execute("UPDATE `telegram_bot` SET `status` = ? WHERE `user_id` = ?", (status, user_id))
+
+    def get_full_name_by_person_id(self, person_id):
+        '''
+        Получает пользователя по уникальному ключу
+        :param person_id:
+        :return:
+        '''
+        try:
+            self.cur.execute("SELECT last_name, first_name, middle_name from users WHERE personId = '{}'".format(person_id))
+
+            row = self.cur.fetchone()
+            return '{} {} {}'.format(row[0], row[1], row[2])
+        except BaseException as e:
+            print(ValueError("Error get Users info: " + str(e)))
+            return -1
+
+    #todo Надо доделать
+    def get_data_for_report_1(self, period_dey=7, period_min=5):
+        '''
+        Формирует отчет о заболевших за последнее время
+        Действия:
+        1) ищем в таблице Log за временной поромежуток все запеси
+        2) Проходим по каждой из записей получаем:
+            1.ФИО если пользователь был распознан
+            2.Его фотографию
+            3.дату время прохода
+            3.1 Зная время прохода берем промежуток по времени +- 1сек
+            3.2 В таблице с температурами находим температуры данного пользователя
+            3.3 todo необходимо дописать отчет так как поменялась логика
+        :param period_dey:
+        :param period_min:
+        :return:
+        '''
+
+        current_time = datetime.datetime.now()
+        period_search = current_time - datetime.timedelta(days=period_dey, minutes=period_min)
+        print("временной промежуток: ", current_time, period_search)
+
+        self.cur.execute("SELECT person_id, data_time, name_image from log WHERE data_time BETWEEN '{}' and '{}'".format(period_search, current_time))
+
+        rows = self.cur.fetchall()
+
+        # ['01-12-2020', 'Shumelev Dmitry Igorevith', '36.6', '37.8', 'Проходит', '/home/dima/Изображения/Nnec5EGL3oo.jpg']
+        data_report = []
+        for log_data in rows:
+            person_id = log_data[0]
+            name_photo = os.path.join(self.path_save_image, log_data[2]+'.jpg')
+            if person_id != '00000000-0000-0000-0000-000000000000':
+                fullName = self.get_full_name_by_person_id(person_id)
+            else:
+                fullName = "Пользователь не распознан"
+
+            time_temp = log_data[1]  #2020-10-29 12:00:50.660110
+            time_temp = datetime.datetime.strptime(time_temp, '%Y-%m-%d %H:%M:%S.%f')
+
+            time_1 = time_temp - datetime.timedelta(seconds=1)
+            time_2 = time_temp + datetime.timedelta(seconds=1)
+
+            self.cur.execute("SELECT * from log_temperature WHERE data_time BETWEEN '{}' and '{}'".format(time_1, time_2))
+
+            rows = self.cur.fetchall()
+            for measurements in rows:
+
+                data_pir = max(measurements[1].strip('][').split(', '))
+                data_tepl = max(measurements[2].strip('][').split(', '))
+
+                if float(data_pir) >= 37.6:
+                    solutions = 'Подозрительный поьзователь'
+                else:
+                    solutions = 'Все нормально'
+                update_date_time = str(time_temp)[:str(time_temp).rfind('.')]
+                data_report.append([update_date_time, fullName, data_pir, data_tepl, solutions, name_photo])
+
+        print(data_report)
+
+        return (str(str(current_time)[:str(current_time).rfind('.')]), str( str(period_search)[:str(period_search).rfind('.')])), data_report
+
 
 if __name__ == '__main__':
+    import numpy
+    path_save_image = '/home/pi/project/log'
+    dict_connect_settings = '/home/dima/PycharmProjects/termoBox/rc/database.bd'
 
-    test = BD(dict_connect_settings)
+    test = DATA_BASE_TELEGRAM_BOT(dict_connect_settings, path_save_image)
     #frame, flag_disease, person_id=None
-    test.pull_log(np.zeros([100, 100, 3], dtype=np.uint8), True, None) #+
-    test.pull_temperature([1,2,3,4,5],[1.2,1,3,4,2], True, False)
-    test.pull_log_background([1,2,3,4,5],[1.2,1,3,4,2])
+    # print(test.get_people_name_by_person_id('b9e1d2bc-ac4f-4b5b-bec3-fd586c8c3e4'))
+    # print(test.is_person_id('b9e1d2bc-ac4f-4b5b-bec3-fd586c8c3e4'))
+    # test.pull_log(numpy.zeros([100, 100, 3], dtype=numpy.uint8), True, None) #+
+    # test.pull_temperature([1,2,3,4,5],[1.2,1,3,4,2], True, False)
+    # test.pull_log_background([1,2,3,4,5],[1.2,1,3,4,2])
+    # print(test.get_full_name_by_person_id('b9e1d2bc-ac4f-4b5b-bec3-fd586c8c3e49'))
+    # print(test.get_calibration_threshold())
+    print(test.pull_calibration_threshold(6, 5))

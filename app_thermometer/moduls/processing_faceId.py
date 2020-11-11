@@ -92,11 +92,11 @@ class processing_faceid:
             print("Конец обновиления классификатора")
             os.remove(os.path.join(pathDatabese, 'dataBase_1.pk'))
             self.mode_update_classificator = True
-
+        """
         branch_4(os.path.join(pathDatabese, 'dataBase_1.pk'), pathDatabese)
         os.remove(os.path.join(pathDatabese, 'dataBase_1.pk'))
         self.mode_update_classificator = True
-
+        """ 
 
     def load_classificator(self):
         '''
