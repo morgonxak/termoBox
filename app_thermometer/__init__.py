@@ -675,13 +675,19 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #границы допустимого
         self.___min___ = 20.0
         self.___max___ = 39.2
+        #\/попытки обработки 
         
+         
         self.out_last_tepl = 33.2
         self.out_last_pir = 33.2
-        
+        #с кофициэнтами 
         self.threshold_pir_cof = 0
         self.threshold_teplovizor_cof = 0
+        #по  прогнозам 1х  10 в бд
+        self.if_bd_10 = False
         
+        
+        #/\попытки обработки 
 
         # управление
         self.time = 0.3  # шаг повторения по времени
@@ -741,7 +747,8 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         переводит темповые переменные в рабочие
         '''
 
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
+       # self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
         if not self.temp_tepl_arr is None:
             del self.temp_tepl_arr
         self.temp_tepl_arr = None
@@ -754,11 +761,14 @@ class teplo_Thread(threading.Thread):  # работа с температура�
 
         #self.temp_tepl_arr = numpy.copy(self.next_tepl_arr) #self.teplovizor.getreturnMaxrix() #numpy.array([self.temp_tepl_Raw,self.temp_tepl_Raw])    
         data_time, self.threshold_pir_cof, self.threshold_teplovizor_cof = self.dataBase.get_calibration_threshold()
-        
+        '''
         self.out_last_tepl = out_last_tepl
         self.out_last_pir = out_last_pir
-
-        
+        '''
+        # бд 10 первых
+        self.if_bd_10, out_last_tepl, out_last_pir = dataBase.get_agv_10_calibration_threshold() 
+        if self.if_bd_10:
+            self.out_last_tepl, self.out_last_pir = out_last_tepl, out_last_pir
         
 
     def teplo(self):
@@ -824,11 +834,12 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             return False
         """
         temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
+
+        Raw = temp_tepl_Raw - self.out_last_tepl 
+        Pir = tempPir - self.out_last_pir 
         
-        
-        Raw = self.temp_tepl_Raw - self.out_last_tepl 
-        Pir = self.tempPir - self.out_last_pir 
-        
+        #коффиц
+        """
         #print(Raw,Pir)
         #print(self.threshold_teplovizor_cof,self.threshold_pir_cof)
         #print(Raw - self.threshold_teplovizor_cof,Pir - self.threshold_pir_cof)
@@ -837,6 +848,23 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if_ = 3 <= abs (Raw - self.threshold_teplovizor_cof) and 3 <= abs (Pir - self.threshold_pir_cof)
         #print("if_valid_min {}".format(if_))
         return if_
+        """
+        # бд 10 первых
+        threshold_teplovizor_cof = -3 #нижние коффиц расхождения
+        threshold_pir_cof = -2 # нижние коффиц расхождения
+        if not self.if_bd_10: 
+            return True
+        else:
+            if_ = threshold_teplovizor_cof <= (Raw) and threshold_pir_cof <=(Pir)
+            """
+            print("temp_tepl_Raw {}   tempPir {}".format(temp_tepl_Raw, tempPir))
+            print("out_last_tepl {}   out_last_pir {}".format(self.out_last_tepl, self.out_last_pir))
+            print("Raw {}   threshold_pir_cof {}".format(Raw, Pir))
+            print("if_valid_min {}".format(if_))
+            print("________________")
+            """
+            return if_
+        
         
     def if_valid_max(self, temp_tepl_Raw=None, tempPir=None):
         '''
@@ -850,21 +878,41 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             return False
         """
         temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-        Raw = self.temp_tepl_Raw - self.out_last_tepl 
-        Pir = self.tempPir - self.out_last_pir 
-        
+        Raw = temp_tepl_Raw - self.out_last_tepl 
+        Pir = tempPir - self.out_last_pir 
+        #коффиц
+        """
         print("Temperaturs Tepl:{} / Pir:{}".format(self.temp_tepl_Raw,self.tempPir))
         print("the temperature of the environment Tepl:{} / Pir:{}".format(self.out_last_tepl,self.out_last_pir))
         print("Coefficient Temperatur Tepl:{} / Pir:{}".format(Raw,Pir))
         print("Coefficient BD Tepl:{} / Pir:{}".format(self.threshold_teplovizor_cof,self.threshold_pir_cof))
         #print(Raw - self.threshold_teplovizor_cof,Pir - self.threshold_pir_cof) 
         print("_____________") 
-        
         if_ = abs (Raw - self.threshold_teplovizor_cof) <= 6 and abs (Pir - self.threshold_pir_cof) <= 6
         #print("if_valid_max {}".format(if_))
         return if_ 
+        """
+        # бд 10 первых
+        threshold_teplovizor_cof = 3 #верхние коффиц расхождения
+        threshold_pir_cof = 2 # верхние коффиц расхождения
         
-    def if_valid(self, tempPir=None, temp_tepl_Raw=None):
+        if not self.if_bd_10: 
+            return True
+        else:
+            if_ = (Raw)<= threshold_teplovizor_cof and (Pir)<=threshold_pir_cof
+            """
+            print("temp_tepl_Raw {}   tempPir {}".format(temp_tepl_Raw, tempPir))
+            print("out_last_tepl {}   out_last_pir {}".format(self.out_last_tepl, self.out_last_pir))
+            print("Raw {}   threshold_pir_cof {}".format(Raw, Pir))
+            print("if_valid_max {}".format(if_))
+            print("________________")
+            """
+            return if_
+        
+        
+        
+        
+    def if_valid(self, temp_tepl_Raw=None, tempPir=None):
         '''
         вохвращает: входят ли рабочие данные в границы допустимого
         '''

@@ -13,6 +13,7 @@ import threading
 import numpy 
 import logging ## лог
 
+
 logging.basicConfig(filename="sample.log", level=logging.INFO)
 #from multiprocessing.pool import ThreadPool
 #from multiprocessing import Process , Queue #,Pool 
@@ -489,13 +490,13 @@ if __name__ == "__main__":
     #Open_Th.start()#старт
     
     #def zeroing():
-    #    t = time.time()
+    #    
     if_save_bd = True
     while(Active):
         
         if if_null:
             if_null = False
-            
+            t = time.time()
 
         #if not x_y_w_h is None :
         #    x_y_w_h.set_()
@@ -513,6 +514,7 @@ if __name__ == "__main__":
             #print("wwwwwwwwwww")
             #print(time.time() - t)
             time_if = time.time() - t
+            #print(time_if)
             if time_if < frame_time :
                 if_save_bd = True
                 list_save_Raw, list_save_Pir = save_numpy_bd_ob.out_last()
@@ -542,12 +544,13 @@ if __name__ == "__main__":
                 if if_save_bd:
                     if_save_bd = False
                     dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
-                    dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.ok_temp_tepl_Raw], teplo_Th.ok_inputPir,  frame_delay_if)
-                
+                    dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
+                    #print(dataBase.get_agv_10_calibration_threshold())
             #elif time.time() - t < time_out_all+3:
             #    pin_Th.pin_all(False)
             #    None
             else:
+                
                 frame_Th.zeroing()
                 teplo_Th.zeroing()
                 pin_Th.pin_all(False)

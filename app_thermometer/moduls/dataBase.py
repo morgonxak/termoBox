@@ -4,6 +4,7 @@ import datetime
 import uuid
 import os
 import sqlite3
+import numpy 
 
 class BD:
     '''
@@ -115,13 +116,13 @@ class BD:
 
         return 0
 
-    def pull_temperature(self, data_teplovizor: list, data_pirometr: list, is_hand: bool, is_fase: bool):
+    def pull_temperature(self, data_teplovizor: list, data_pirometr: list, is_hand, is_fase):
         '''
         Заполняет базу с температурами
         :param data_teplovizor: Масив с температурами с тепловизора
         :param data_pirometr: Масив с температурами с пирометра
-        :param is_hand: Данный о руке
-        :param is_fase: Данные о лице
+        :param is_hand: Данный о руке /0 - есть рука / 1 - нет руки
+        :param is_fase: Данные о лице /1 - есть лицо / 2 - нет лицо
         :return: 0 все хорошо, -1 что то не так
         '''
 
@@ -192,7 +193,60 @@ class BD:
 
         except BaseException as e:
             print(ValueError("Error get_calibration_threshold: {}".format(e)))
+            
+    def get_agv_10_calibration_threshold(self):
+        '''
+        Получает данные о колибровки
+        :return: (ДатаВремя, Температура пирометра, температура тепловизора)
+        '''
+        data_str = str(datetime.datetime.today().strftime("%Y-%m-%d"))
+        #print(data_str)
+        try:
+            sql_str = "SELECT count(data_time) FROM( SELECT (data_time) FROM log_temperature WHERE data_time LIKE '{}'||'%'  and temperature_teplovizor <> 'None' and is_hand = 0 ORDER BY data_time DESC  LIMIT 10)".format(data_str) # DESC
+            
+            #print(sql_str)
+            self.cur.execute(sql_str)
+            #row = self.cur.fetchone()[0]
 
+            row = self.cur.fetchall()
+            #print(row)
+            #print(row[0][0])
+            if row[0][0] < 10:
+                return False, 0, 0
+            sql_str = "SELECT temperature_teplovizor, temperature_pirometr FROM log_temperature WHERE data_time LIKE '{}'||'%' and temperature_teplovizor <> 'None' and is_hand = 0 ORDER BY data_time DESC LIMIT 10".format(data_str)  # DESC 
+            self.cur.execute(sql_str)
+
+            rows = self.cur.fetchall()
+            
+            #print(rows[0])
+            max_teplovizor = []
+            max_pirometr = []
+            for number in range(0, 10):
+                threshold_teplovizor, threshold_pirometr = rows[number]
+                #print(threshold_pirometr)
+                threshold_teplovizor = threshold_teplovizor.replace("[", "").replace("]", "").replace("\n", " ").replace(" ", "\n").replace("\n\n", "\n")
+                threshold_teplovizor = threshold_teplovizor.replace("\n\n", "\n").split('\n')
+
+                threshold_pirometr = threshold_pirometr.replace("[", "").replace("]", "").replace("\n", " ").replace(" ", "\n").replace("\n\n", "\n")
+                threshold_pirometr = threshold_pirometr.replace("\n\n", "\n")
+
+                #print(threshold_pirometr)
+                max_teplovizor.append(float(max(threshold_teplovizor)))
+                max_pirometr.append(float((threshold_pirometr)))
+                
+                #print(max_teplovizor[-1],max_pirometr[-1])
+            avg_teplovizor = sum(max_teplovizor) / len(max_teplovizor)
+            avg_pirometr = sum(max_pirometr) / len(max_pirometr)
+            #print(avg_teplovizor,avg_pirometr , "!!!!")
+            
+            
+            return True, round(avg_teplovizor, 1), round(avg_pirometr, 1)
+
+        except BaseException as e:
+            print(ValueError("Error get_agv_10_calibration_threshold: {}".format(e)))
+            
+            
+            
 class PASS_OFFICE(BD):
     def __init__(self, path_bd_file: str, path_save_image: str):
         super(PASS_OFFICE, self).__init__(path_bd_file, path_save_image)
