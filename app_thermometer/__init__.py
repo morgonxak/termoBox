@@ -747,8 +747,8 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         переводит темповые переменные в рабочие
         '''
 
-       # self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
+        #self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
         if not self.temp_tepl_arr is None:
             del self.temp_tepl_arr
         self.temp_tepl_arr = None
@@ -936,7 +936,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #if self.if_valid():
         #self.ok_temp_tepl_Raw =
         #if (self.if_valid(tempPir, temp_tepl_Raw) or not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)
-        if ((self.if_valid(tempPir, temp_tepl_Raw) and inputPir == 0) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir)) and inputPir == 0) : 
+        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir == 0) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir == 0) : 
             self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, inputPir
         self.ok_inputPir = inputPir  
         return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir
