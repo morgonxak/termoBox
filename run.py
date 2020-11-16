@@ -126,7 +126,7 @@ class cv2_out_object():
         rec_x = self.frame_Th.width//2 - rectangle_width//2 
         rec_y = self.frame_Th.height//2 - rectangle_height//2 
         
-        print(rec_x,rec_y, rectangle_width, rectangle_height )
+        #print(rec_x,rec_y, rectangle_width, rectangle_height )
         cv2.rectangle(self.frame, (rec_x, rec_y), (rec_x + rectangle_width, rec_y + rectangle_height), self.color_green, self.lineType)#вывод квадр
     
     def out_time(self, time):
