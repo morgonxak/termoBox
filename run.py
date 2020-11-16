@@ -125,6 +125,8 @@ class cv2_out_object():
         '''
         rec_x = self.frame_Th.width//2 - rectangle_width//2 
         rec_y = self.frame_Th.height//2 - rectangle_height//2 
+        
+        print(rec_x,rec_y, rectangle_width, rectangle_height )
         cv2.rectangle(self.frame, (rec_x, rec_y), (rec_x + rectangle_width, rec_y + rectangle_height), self.color_green, self.lineType)#вывод квадр
     
     def out_time(self, time):
@@ -521,9 +523,9 @@ if __name__ == "__main__":
         frame, x_y_w_h,  frame_delay_if, id_person,fase_RGB_200_200 = frame_Th.out()
         frame = frame_Th.frame_orientation(frame) 
         
-            
+        cv2_out_ob.next_()    
         if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
-            cv2_out_ob.next_()
+            #cv2_out_ob.next_()
             #print(x_y_w_h.get_())
             #print("wwwwwwwwwww")
             #print(time.time() - t)
@@ -576,7 +578,7 @@ if __name__ == "__main__":
                 None
 
         else:
-        
+            #cv2_out_ob.next_()
             cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
             save_numpy_bd_ob.save() # обсчёт и сейв окружающей
 
