@@ -113,6 +113,19 @@ class cv2_out_object():
             x , w , y , h = self.x , self.w , self.y , self.h          
         if x + w + y + h > 0: 
             cv2.rectangle(self.frame, (self.x, self.y), (self.x + self.w, self.y + self.h), self.color_rectangle, self.lineType)#вывод квадр
+            
+    def out_rectangle_backdrop(self, rectangle_width:int=320, rectangle_height:int=320):
+        '''
+        ф-я вывода на экран квадрата по центру для вставки цица 
+        '''
+        #print(self.x , self.w, self.y , self.h)
+        '''  
+        rectangle_width = 320
+        rectangle_height = 320
+        '''
+        rec_x = self.frame_Th.width//2 - rectangle_width//2 
+        rec_y = self.frame_Th.height//2 - rectangle_height//2 
+        cv2.rectangle(self.frame, (rec_x, rec_y), (rec_x + rectangle_width, rec_y + rectangle_height), self.color_green, self.lineType)#вывод квадр
     
     def out_time(self, time):
         '''
@@ -445,8 +458,9 @@ if __name__ == "__main__":
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
     color = (255, 255, 255) # цвет задника
+    rectangle_width = 320 #фоновый квадрат для лица (width)
+    rectangle_height = 320 #фоновый квадрат для лица (height)
     # с особым обнулением
-
     
     # с обнулением
     time_temp1 = time.time() #начало сканирования лица #для шага в программе
@@ -523,12 +537,14 @@ if __name__ == "__main__":
                 teplo_Th.next_(list_save_Raw, list_save_Pir )
                 
                 #print(teplo_Th.teplo())
+                cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
                 cv2_out_ob.out_rectangle()
                 cv2_out_ob.out_name()
                 cv2_out_ob.out_time(frame_time-(time_if)+0.4)
                 leg = (cv2_out_ob.out_text_if_teplo())
                 if leg == 0:
                     pin_Th.pin_mig("blue", True)#
+                    t = time.time()-(frame_time+0.1)
                 else:
                     pin_Th.pin_mig("red", True)
                 
@@ -560,6 +576,8 @@ if __name__ == "__main__":
                 None
 
         else:
+        
+            cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
             save_numpy_bd_ob.save() # обсчёт и сейв окружающей
 
 
@@ -568,6 +586,7 @@ if __name__ == "__main__":
         #frame = cv2_out_ob.get_()
         if not frame is None :
             #frame = cv2.UMat(frame)
+
             cv2.imshow('window', frame)
         
         
