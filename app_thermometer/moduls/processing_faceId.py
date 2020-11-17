@@ -122,7 +122,7 @@ class processing_faceid:
 
         res_predict_cvm = self.__predict_cvm(descriptor_fase_RGB)
         res_predict_knn = self.__predict_knn(descriptor_fase_RGB)
-        print(res_predict_cvm, res_predict_knn, res_predict_cvm == res_predict_knn)
+        #print(res_predict_cvm, res_predict_knn, res_predict_cvm == res_predict_knn)
 
         if res_predict_cvm == res_predict_knn:
             if not res_predict_cvm is None:

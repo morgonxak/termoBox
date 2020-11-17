@@ -12,6 +12,14 @@ import time
 import threading
 import numpy 
 import logging ## лог
+#import pyglet
+#import pygame
+#from pygame import mixer
+#import vlc
+import os
+#import playsound
+#import gi
+from pydub import AudioSegment
 
 
 logging.basicConfig(filename="sample.log", level=logging.INFO)
@@ -31,7 +39,8 @@ if if_test_wimdovs:
     face_detector = cv2.CascadeClassifier(r'C:\Users\Admin\Desktop\python\haarcascade_frontalface_default.xml')
 else:
     import RPi.GPIO as GPIO
-    from app_thermometer import face_detector, processing_recognition, BD, dataBase, on_buzer #,teplovizor, pirometr, valid, pin_red_pin, pin_green_pin  
+    from app_thermometer import face_detector, processing_recognition, BD, dataBase, \
+        on_buzer #,teplovizor, pirometr, valid, pin_red_pin, pin_green_pin  
     from app_thermometer import x_y_w_h_object, frame_Thread, pin_Thread, teplo_Thread, Open_Thread
 
 
@@ -49,7 +58,7 @@ class cv2_out_object():
         self.color_text = self.color_orange #(33, 47, 252) #(255, 150, 0) # цвет text
         self.color_text_time = self.color_green
         self.thickness = 4 # размер символов в квадрате
-        self.FONT_= cv2.FONT_HERSHEY_COMPLEX # фон
+        self.FONT_ = cv2.FONT_HERSHEY_COMPLEX # фон
         self.lineType= 2
         
         self.frame_Th = frame_Th 
@@ -75,7 +84,7 @@ class cv2_out_object():
         self.x , self.y , self.w , self.h = 0,0,0,0
         self.id_person = None # переменная под персонал
         """
-        self.r_w = 0#w/(23) #w/23 / 21.5
+        self.r_w = 0 #w/(23) #w/23 / 21.5
         self.fontScale = 0
         
         self.next_()
@@ -88,11 +97,11 @@ class cv2_out_object():
         #    if not self.fase_RGB_200_200 is None :
         self.id_person = self.id_person_temp
         
-        self.x , self.y , self.w , self.h = self.x_y_w_h.get_()        
+        self.x, self.y, self.w, self.h = self.x_y_w_h.get_() 
         self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.teplo_Th.teplo()
-        self.r_w = self.w/200#w/(23) #w/23 / 21.5
+        self.r_w = self.w / 200 #w/(23) #w/23 / 21.5
         
-        self.fontScale=self.r_w/2
+        self.fontScale = self.r_w/ 2
     """    
     def set_(self, frame, time , x_y_w_h: x_y_w_h_object, id_person):
         self.frame = frame #переменная под фрейм с камеры
@@ -104,7 +113,7 @@ class cv2_out_object():
         
         self.fontScale=self.r_w/2
     """
-    def out_rectangle(self, x:int=0 ,y:int=0 ,w:int=0, h:int=0):
+    def out_rectangle(self, x:int=0, y:int=0, w:int=0, h:int=0):
         '''
         ф-я вывода на экран квадрата выделяюшего лицо 
         '''
@@ -250,7 +259,7 @@ class cv2_out_object():
                 #cv2.putText(self.frame, text, (x, y), self.FONT_, fontScale, color_text, self.thickness, self.lineType) 
                 
                 if  if_all_width_frame:
-                    cv2.rectangle(self.frame, (0, y+baseline), (self.frame_Th.width, y-(text_height+baseline)), color_rectangle, -1)
+                    cv2.rectangle(self.frame, (0, y+baseline), (self.frame_Th.width, y - (text_height+baseline)), color_rectangle, -1)
                     
                     
                 if Align == 1:
@@ -303,7 +312,7 @@ class cv2_out_object():
                 text_temp = ""
                 text_temp_end = 0
                 saze_temp = 0
-                for w in text.split():#пройтись по каждому слову
+                for w in text.split(): #пройтись по каждому слову
                     if text_temp != "" and saze_temp + len(w) > saze:
                         list1.append(text_temp.strip())     
                         text_temp = ""
@@ -326,7 +335,7 @@ class cv2_out_object():
                             saze_temp = len(w)
                             text_temp = w 
                             text_temp_end = 1
-                        if saze_temp != 0 and saze_temp <= saze-1:
+                        if saze_temp != 0 and saze_temp <= saze - 1:
                             saze_temp += 1
                             text_temp += " "
                 if text_temp_end == 1 :
@@ -360,7 +369,7 @@ class cv2_out_object():
             elif direction == 1:  # вниз
                 list_ = reversed(list_text)
             #for i, _text in enumerate(list_text)
-            for _text in list_:#пройтись по каждому слову ####################distance_lines=distance_lines,
+            for _text in list_: #пройтись по каждому слову ####################distance_lines=distance_lines,
                 x1,y1,w1,h1 = self.cv2_putTex_rectangle(text=_text, x=x1, y=y1+d*((h1+dist)*1),  fontScale=fontScale, color_rectangle=color_rectangle, 
                                                         color_text=color_text , if_all_width_frame = if_all_width_frame, Align = Align) # вывод текста с фоном
                 i+=1
@@ -378,7 +387,7 @@ class save_numpy_bd_object():
     def __init__(self, dataBase:BD,  teplo_Th:teplo_Thread):
         self.dataBase = dataBase
         self.teplo_Th = teplo_Th 
-        self.time_save_bd = 5*60 # время на отправку в бд
+        self.time_save_bd = 5 * 60 # время на отправку в бд
         self.t_save_bd = 0 # time.time() # счёчик времени на отправку в бд
         
         self.t = time.time() #время 1го прохода
@@ -395,7 +404,7 @@ class save_numpy_bd_object():
         
         
         #if inputPir == 1: # /0 - есть рука / 1 - нет руки
-        self.dataBase.pull_log_background(self.teplo_Th.temp_tepl_arr,[Pir]) # 
+        self.dataBase.pull_log_background(self.teplo_Th.temp_tepl_arr, [Pir]) # 
     
         #print(Raw, Pir)
         if len(self.list_save_Raw) >= self.list_len:
@@ -411,7 +420,7 @@ class save_numpy_bd_object():
             print("save_numpy_bd_object rewritten")
         
         
-    def ___avg___(self,list_): 
+    def ___avg___(self, list_): 
         return sum(list_) / len(list_)
         
     def out_last(self):
@@ -454,9 +463,9 @@ x = y = w = h = 0
 
 if __name__ == "__main__":
     # без обнуления   
-    time_out_all = 8 # таймер на цикл
+    time_out_all = 6 # таймер на цикл
 
-    frame_time = 5 # время на распознование
+    frame_time = 3 # время на распознование
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
     color = (255, 255, 255) # цвет задника
@@ -500,14 +509,43 @@ if __name__ == "__main__":
     cv2_out_ob = cv2_out_object(dataBase, frame_Th, teplo_Th, pin_Th)
     
     save_numpy_bd_ob = save_numpy_bd_object(dataBase, teplo_Th)
+    #"file://"+
+    STR_song_True = os.path.abspath(os.path.join(os.getcwd(), "./True.mp3"))
+    STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.mp3"))
+    print(STR_song_True)
+    print(STR_song_False)
+    
+    
+    song_True = AudioSegment.from_mp3(STR_song_True)
+    song_False = AudioSegment.from_mp3(STR_song_False)
+
+    #song_True = vlc.MediaPlayer(STR_song_True)
+    #song_False = vlc.MediaPlayer(STR_song_False)
+
+    
+    
+    #mixer.init()
+    ##mixer.music.load("play.mp3")    
+    #song_True = mixer.music.load("True.mp3")
+    #song_False = mixer.music.load("False.mp3")
+    
+    #pygame.init()
+    #song_True = pygame.mixer.Sound('True.mp3') #pygame.mixer.Sound('./True.mp3')
+    ##os.path.abspath(os.path.join(os.getcwd(), './True.mp3')))
+    #song_False =pygame.mixer.Sound('False.mp3') #pygame.mixer.Sound('./False.mp3')
+    ##os.path.abspath(os.path.join(os.getcwd(), './False.mp3'))) #pygame.mixer.Sound('./False.mp3')
+    ##song_ = None
+    
     #cv2_out_ob.next_()
     
     #Open_Th = Open_Thread() #управление действием при удачном прохождении
     #Open_Th.start()#старт
     
     #def zeroing():
-    #    
+    #  
+    if_pyglet = True
     if_save_bd = True
+    frame_Th.next_()
     while(Active):
         
         if if_null:
@@ -519,9 +557,9 @@ if __name__ == "__main__":
          
 
         
-        frame_Th.next_()
+        #frame_Th.next_()
         frame, x_y_w_h,  frame_delay_if, id_person,fase_RGB_200_200 = frame_Th.out()
-        frame = frame_Th.frame_orientation(frame) 
+        #frame = frame_Th.frame_orientation(frame) 
         
         cv2_out_ob.next_()    
         if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
@@ -555,14 +593,32 @@ if __name__ == "__main__":
                 #print(time_out_all)
                 #print(time_if < time_out_all)
                 #print("OOOOOOO")
+                
                 if cv2_out_ob.out_text_end():
                     pin_Th.pin_on_off("green", True)
+                    if if_pyglet:
+                        #song_ = song_True
+                        if_pyglet = False
+                        #song_True.play()
+                        #playsound.playsound(STR_song_True, True)
+                        song_True.export("final.wav", format="wav")
                 else:
                     pin_Th.pin_on_off("red", True)
+                    if if_pyglet:
+                        #song_ = song_False
+                        if_pyglet = False
+                        #playsound.playsound(STR_song_False, True)
+                        song_False.export("final.wav", format="wav")
+                        #song_False.play()
+                #if if_pyglet:
+                #    if_pyglet = False
+                #    song_.play()  
+                pin_Th.pin_on_time("door", 3)
                 if if_save_bd:
                     if_save_bd = False
                     dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
                     dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
+                    #print("dataBase.pull_log")
                     #print(dataBase.get_agv_10_calibration_threshold())
             #elif time.time() - t < time_out_all+3:
             #    pin_Th.pin_all(False)
@@ -581,7 +637,7 @@ if __name__ == "__main__":
             #cv2_out_ob.next_()
             cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
             save_numpy_bd_ob.save() # обсчёт и сейв окружающей
-
+        
 
            
 
@@ -590,7 +646,7 @@ if __name__ == "__main__":
             #frame = cv2.UMat(frame)
 
             cv2.imshow('window', frame)
-        
+        frame_Th.next_()
         
         """
         #pin_Th.pin_mig(pin_Th.pin_namber("red"), True)
@@ -613,7 +669,10 @@ if __name__ == "__main__":
             teplo_Th.Stop_()
             pin_Th.Stop_()
             frame_Th.Stop_()
+            pyglet.app.run()
+            #pygame.quit()
             cv2.destroyAllWindows()
             Active = False
+            
             #break
    

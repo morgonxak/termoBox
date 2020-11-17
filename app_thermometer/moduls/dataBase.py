@@ -100,10 +100,12 @@ class BD:
             #print(self.path_save_image)
             str_ =  os.path.join(self.path_save_image, name_image + '.jpg')
             try:
+                #print(" save image {} ".format(type(frame)))
                 cv2.imwrite(str_, frame)
             except BaseException as e:
                 print("error save image {} {}".format(str_, e))
-
+            except:
+                print("error save image {}".format(str_))
             self.cur.execute(
                 "INSERT INTO log (person_id, data_time, name_image) VALUES ('{}', '{}', '{}')".format(person_id, data_time, name_image)
             )

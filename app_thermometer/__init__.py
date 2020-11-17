@@ -113,7 +113,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
 
         self.ROTATE_CLOCKWISE = cv2.ROTATE_90_CLOCKWISE
 
-        self.time = 0.1  # шаг повторения по времени
+        self.time = 0.3  # шаг повторения по времени
         self.out_in = False  # для чтения с потока
         self.cap = None  # переменная для подключения к камере
         self.image = None
@@ -166,21 +166,27 @@ class frame_Thread(threading.Thread):  # работа с камерой
     def ___in_out___(self):
 
         self.out_in = False 
-        
-         
-        self.frame_out = numpy.copy(self.frame) # кадр
-        self.x_y_w_h_out.set_(self.x_y_w_h.get_())#положение лица
-        self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
-        self.id_person_out = self.id_person # id_person
-         
-        self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо
+        #self.frame_out.delete()
+        #self.fase_RGB_200_200_out.delete()
+        #self.frame_out= None 
+        #self.frame_out = numpy.copy(self.frame) # кадр self.frame.copy()
+        if not(self.frame_out == self.frame).all():
+            self.frame_out = (self.frame) if not self.frame is None else self.frame_out # кадр
+            self.x_y_w_h_out.set_(self.x_y_w_h.get_())#положение лица
+            self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
+            self.id_person_out = self.id_person # id_person
+            
+            #self.fase_RGB_200_200_out = None
+            #self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо self.fase_RGB_200_200.copy()
+            self.fase_RGB_200_200_out = (self.frame) if not self.fase_RGB_200_200 is None else self.fase_RGB_200_200_out  # лицо
         
     def next_(self):
         self.out_in = True
 
     def out(self):
         # while self.out_in: None #???????????????
-        return self.frame_out, self.x_y_w_h_out, self.frame_delay_if_out, self.id_person_out, self.fase_RGB_200_200_out  ##.get_()
+        #print("!!! {}".format( type(self.frame))).copy().copy()
+        return self.frame_out if not self.frame_out is None else None, self.x_y_w_h_out, self.frame_delay_if_out, self.id_person_out, self.fase_RGB_200_200_out if not self.fase_RGB_200_200_out is None else None  ##.get_()
 
     def Stop_(self):
         '''
@@ -247,6 +253,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
 
                     x , y , w, h = self.x_y_w_h.get_() 
                     self.fase_RGB_200_200 = numpy.copy((self.frame)[y:y + w, x:x + h]) #self.numpy_copy() #numpy.copy((self.frame)[y:y + w, x:x + h]) 
+                    #self.fase_RGB_200_200 = (self.frame[y:y + w, x:x + h]).copy() #self.numpy_copy() #numpy.copy((self.frame)[y:y + w, x:x + h]) 
                     clearQueue() # обнуление очереди
                     #self.id_hread = Process(target=self.Id_to_face, args=(self.fase_RGB_200_200,self.return_Id_to_face))#, daemon=True
                     self.id_hread = Process(target=self.Id_to_face)#, daemon=True
@@ -303,11 +310,11 @@ class frame_Thread(threading.Thread):  # работа с камерой
         self.fase_RGB_200_200 = None # под скрин лица
             
         #self.frame_out = self.frame
-        self.x_y_w_h_out.set_() #положение лица
-        self.frame_delay_if_out = True #отсутствие задержки 
-        self.id_person_out = None # id_person    
+        #self.x_y_w_h_out.set_() #положение лица
+        #self.frame_delay_if_out = True #отсутствие задержки 
+        #self.id_person_out = None # id_person    
 
-        self.fase_RGB_200_200_out = None  # под скрин лица
+        #self.fase_RGB_200_200_out = None  # под скрин лица
         self.hread(True)
 
     def frame_orientation(self, frame=None):  # ориентация кадра или фото
@@ -488,6 +495,9 @@ class pin_Thread(threading.Thread):  # работа со пином
         self.pin_add("red", 17)
         self.pin_add("blue", 22)
         self.pin_add("green", 27)
+        
+        
+        self.pin_add("door", 25)
 
     def pin_add(self, Name: str, pin: int):
         '''
@@ -673,7 +683,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         self.teplovizor = amg88() # подключение верхнего тепловизора 
         self.pirometr = MLX90614(SMBus(1)) # подключение нижнего тепловизора
         #границы допустимого
-        self.___min___ = 20.0
+        self.___min___ = 0.0 #20
         self.___max___ = 39.2
         #\/попытки обработки 
         
@@ -725,7 +735,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             print("error: teplo_Thread.___teplo___ (tepl)")
             pass
         try:
-            inputPir = GPIO.input(18)
+            inputPir = 0 #GinputPir = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
             tempPir = round(self.pirometr.get_object_1(), 1)
             # if GPIO.input(18) == False:#у нас есть отжатая кнопа?
             #    tempPir = round(self.pirometr.get_object_1(),1)
@@ -768,6 +778,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         # бд 10 первых
         self.if_bd_10, out_last_tepl, out_last_pir = dataBase.get_agv_10_calibration_threshold() 
         if self.if_bd_10:
+            print("Калибровочные данные:", out_last_tepl, out_last_pir)                                                                                
             self.out_last_tepl, self.out_last_pir = out_last_tepl, out_last_pir
         
 
@@ -835,8 +846,10 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         """
         temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
 
-        Raw = temp_tepl_Raw - self.out_last_tepl 
-        Pir = tempPir - self.out_last_pir 
+        Raw = abs(temp_tepl_Raw - self.out_last_tepl) 
+        Pir = abs(tempPir - self.out_last_pir) 
+        #Raw = temp_tepl_Raw - self.out_last_tepl 
+        #Pir = tempPir - self.out_last_pir 
         
         #коффиц
         """
@@ -850,8 +863,8 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         return if_
         """
         # бд 10 первых
-        threshold_teplovizor_cof = -3 #нижние коффиц расхождения
-        threshold_pir_cof = -2 # нижние коффиц расхождения
+        threshold_teplovizor_cof = 6 #-3 #нижние коффиц расхождения
+        threshold_pir_cof = 10 #-2 # нижние коффиц расхождения
         if not self.if_bd_10: 
             return True
         else:
@@ -878,8 +891,10 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             return False
         """
         temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-        Raw = temp_tepl_Raw - self.out_last_tepl 
-        Pir = tempPir - self.out_last_pir 
+        Raw = abs(temp_tepl_Raw - self.out_last_tepl) 
+        Pir = abs(tempPir - self.out_last_pir) 
+        #Raw = temp_tepl_Raw - self.out_last_tepl 
+        #Pir = tempPir - self.out_last_pir 
         #коффиц
         """
         print("Temperaturs Tepl:{} / Pir:{}".format(self.temp_tepl_Raw,self.tempPir))
@@ -893,13 +908,15 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         return if_ 
         """
         # бд 10 первых
-        threshold_teplovizor_cof = 3 #верхние коффиц расхождения
-        threshold_pir_cof = 2 # верхние коффиц расхождения
+        threshold_teplovizor_cof = 10 #3 #верхние коффиц расхождения
+        threshold_pir_cof = 10 #2 # верхние коффиц расхождения
         
         if not self.if_bd_10: 
+            print("Калибровка", temp_tepl_Raw, tempPir)                                                     
             return True
         else:
             if_ = (Raw)<= threshold_teplovizor_cof and (Pir)<=threshold_pir_cof
+            print("Результат:", temp_tepl_Raw, tempPir, if_)                                                         
             """
             print("temp_tepl_Raw {}   tempPir {}".format(temp_tepl_Raw, tempPir))
             print("out_last_tepl {}   out_last_pir {}".format(self.out_last_tepl, self.out_last_pir))
@@ -921,7 +938,10 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #print( self.if_valid_max(tempPir, temp_tepl_Raw)  )
         #print( self.if_valid_min(tempPir, temp_tepl_Raw)  )
         #print(self.if_valid_max(tempPir, temp_tepl_Raw) and self.if_valid_min(tempPir, temp_tepl_Raw) )
-        if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and self.if_valid_min(temp_tepl_Raw, tempPir ) 
+        
+        #if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and self.if_valid_min(temp_tepl_Raw, tempPir ) 
+        if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and True#self.if_valid_min(temp_tepl_Raw, tempPir ) 
+        # !?!?!?!? ЧТО ЭТО!???
         #print("if_valid {}".format(if_))
         return if_
 
@@ -965,8 +985,8 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             temt_str = 'Обратитесь к врачу: {}'.format(self.valid_max())
 
 
-        elif not self.if_valid_min():  # если рабочие данные  НЕ входят в минимальные границы
-            temt_str = 'Обратитесь к врачу: {}'.format(self.valid_min())
+        #elif not self.if_valid_min():  # если рабочие данные  НЕ входят в минимальные границы
+        #    temt_str = 'Обратитесь к врачу: {}'.format(self.valid_min())
 
         return temt_str
 
