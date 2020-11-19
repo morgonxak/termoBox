@@ -193,6 +193,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
         остановка цикла потока
         '''
         self.if_active = False
+        self.out_in = True
 
     def run(self):
         print("Активация потока frame_Thread")
@@ -232,6 +233,8 @@ class frame_Thread(threading.Thread):  # работа с камерой
                 if self.out_in: 
                     self.out_in = False       
                     self.___in_out___()
+                while not self.out_in and self.if_active:    
+                    time.sleep(0.01)
         self.hread(True)
         if not self.If_Test_Foto:
             self.cap.release()
