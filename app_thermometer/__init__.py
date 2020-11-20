@@ -73,7 +73,7 @@ import logging  ## лог
 
 class x_y_w_h_object(object):
     def __init__(self):
-        self.x = self.y = self.w = self.h = 0
+        self.x =  self.y = self.w = self.h = 0
 
     def set_(self, x=0, y=0, w=0, h=0):
         self.x, self.y, self.w, self.h = x, y, w, h
@@ -113,7 +113,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
 
         self.ROTATE_CLOCKWISE = cv2.ROTATE_90_CLOCKWISE
 
-        self.time = 0.3  # шаг повторения по времени
+        self.time = 0.0  # шаг повторения по времени
         self.out_in = False  # для чтения с потока
         self.cap = None  # переменная для подключения к камере
         self.image = None
@@ -134,6 +134,8 @@ class frame_Thread(threading.Thread):  # работа с камерой
             raise Exception("frame_Thread.frame_image return -1")
 
         del self.frame
+        
+        self.frame_if = False  # для чтения с потока
         self.frame = None  # переменная под фрейм с камеры
         self.return_Id_to_face = Queue()  # очередь для снятия инфы с потока
 
@@ -163,26 +165,41 @@ class frame_Thread(threading.Thread):  # работа с камерой
         # обнуление
         self.zeroing()  # обнуление переменных
 
-    def ___in_out___(self):
+    def ___in_out___(self, if_:bool = False):
 
-        self.out_in = False 
         #self.frame_out.delete()
         #self.fase_RGB_200_200_out.delete()
         #self.frame_out= None 
         #self.frame_out = numpy.copy(self.frame) # кадр self.frame.copy()
-        if not(self.frame_out == self.frame).all():
-            self.frame_out = (self.frame) if not self.frame is None else self.frame_out # кадр
-            self.x_y_w_h_out.set_(self.x_y_w_h.get_())#положение лица
+        
+        #if not(self.frame_out == self.frame).all():
+        if self.if_active:
+            if self.frame_if  or if_: #and self.out_in
+                self.frame_if = False
+            
+                self.frame_out = numpy.copy(self.frame) if not self.frame is None else self.frame_out # кадр
+                self.x_y_w_h_out.set_(self.x_y_w_h.get_())#положение лица
+                self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
+                self.id_person_out = self.id_person # id_person
+                
+                #self.fase_RGB_200_200_out = None
+                #self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо self.fase_RGB_200_200.copy()
+                self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) if not self.fase_RGB_200_200 is None else self.fase_RGB_200_200_out  # лицо
+            self.out_in = False 
+        else:
+            self.frame_out = self.frame# кадр
+            self.x_y_w_h_out = self.x_y_w_h#.get_()#положение лица
             self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
             self.id_person_out = self.id_person # id_person
-            
-            #self.fase_RGB_200_200_out = None
-            #self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо self.fase_RGB_200_200.copy()
-            self.fase_RGB_200_200_out = (self.frame) if not self.fase_RGB_200_200 is None else self.fase_RGB_200_200_out  # лицо
+            self.fase_RGB_200_200_out = self.fase_RGB_200_200  # лицо
         
     def next_(self):
-        self.out_in = True
-
+        if self.if_active:
+            self.out_in = True
+        else:
+            self.___run___()
+            self.___in_out___(True)
+        
     def out(self):
         # while self.out_in: None #???????????????
         #print("!!! {}".format( type(self.frame))).copy().copy()
@@ -192,9 +209,49 @@ class frame_Thread(threading.Thread):  # работа с камерой
         '''
         остановка цикла потока
         '''
-        self.if_active = False
-        self.out_in = True
+        if self.if_active:
+            self.if_active = False
+            self.out_in = True
+    
+    def ___run___(self, t:int = 0):
+        #t = time.time()
+        #time_ = t - self.time_temp1  # time.time()
+        self.frame_image()  # или скрин или фото
+        self.x_y_w_h_temp.set_(self.faces_x_y())
 
+        if self.x_y_w_h_temp.if_(self.min_w_h):
+            self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
+            self.frame_delay = t
+            self.frame_delay_if = True
+            # self.frame_delay_time = self.frame_time_out-time_
+        # elif (0 <= (t - self.frame_delay) <= self.frame_delay_time ):
+        else:
+            self.frame_delay_if = False
+        # else:
+        #    self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
+        #    self.frame_delay_if = True
+        #    #self.time_temp1 = time.time() #XXXXXXXXXXXXXXXX убрать при использовании  zeroing()
+
+        #print(t - self.frame_delay)
+        #print(self.frame_delay_time)
+        #print(self.x_y_w_h.get_())
+        if self.x_y_w_h.if_(self.min_w_h): # and not self.if_null_hread:
+            x , y , w, h = self.x_y_w_h.get_() 
+            #cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
+            #print("self.hread()1 {}".format( self.id_person))
+            self.hread()
+            #print("self.hread()2 {}".format( self.id_person))
+        #self.frame = self.frame_orientation(self.frame)
+
+                
+    def ___end___(self)  :      
+        self.hread(True)
+        if not self.If_Test_Foto:
+            self.cap.release()
+        self.if_on = False
+    
+    
+    
     def run(self):
         print("Активация потока frame_Thread")
         self.if_active = True
@@ -203,42 +260,17 @@ class frame_Thread(threading.Thread):  # работа с камерой
             t = 0
             if time.time() - t >= self.time:
                 t = time.time()
-                time_ = t - self.time_temp1  # time.time()
-                self.frame_image()  # или скрин или фото
-                self.x_y_w_h_temp.set_(self.faces_x_y())
-
-                if self.x_y_w_h_temp.if_(self.min_w_h):
-                    self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
-                    self.frame_delay = t
-                    self.frame_delay_if = True
-                    # self.frame_delay_time = self.frame_time_out-time_
-                # elif (0 <= (t - self.frame_delay) <= self.frame_delay_time ):
-                else:
-                    self.frame_delay_if = False
-                # else:
-                #    self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
-                #    self.frame_delay_if = True
-                #    #self.time_temp1 = time.time() #XXXXXXXXXXXXXXXX убрать при использовании  zeroing()
-
-                #print(t - self.frame_delay)
-                #print(self.frame_delay_time)
-                #print(self.x_y_w_h.get_())
-                if self.x_y_w_h.if_(self.min_w_h): # and not self.if_null_hread:
-                    x , y , w, h = self.x_y_w_h.get_() 
-                    #cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
-                    #print("self.hread()1 {}".format( self.id_person))
-                    self.hread()
-                    #print("self.hread()2 {}".format( self.id_person))
-                #self.frame = self.frame_orientation(self.frame)
-                if self.out_in: 
-                    self.out_in = False       
+                self.___run___(t)
+                if self.out_in and self.frame_if :    
                     self.___in_out___()
-                while not self.out_in and self.if_active:    
-                    time.sleep(0.01)
-        self.hread(True)
-        if not self.If_Test_Foto:
-            self.cap.release()
-        self.if_on = False
+                    #self.out_in = False    
+                    
+                
+                    #print(not self.out_in and self.if_active)
+                    while not self.out_in and self.if_active:  
+                        #print("time.sleep(0.01)")
+                        time.sleep(0.01)
+        self.___end___()
 
     def hread(self, if_zeroing=False):
         def clearQueue():  # обнуление очереди
@@ -251,7 +283,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
 
         if not if_zeroing:   
             #if not(self.id_person is None or self.id_person == -1)
-            if self.id_hread is None :# and self.id_person is None:# не существует ли процесс 
+            if self.id_hread is None and self.id_person is None:# не существует ли процесс 
                 if self.frame_delay_if and not self.frame is None:
 
                     x , y , w, h = self.x_y_w_h.get_() 
@@ -339,6 +371,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
             self.frame = None
         if not self.If_Test_Foto:
             self.ret, self.frame = self.cap.read()
+            self.frame_if = True
             if not self.frame is None:
                 self.frame = cv2.flip(self.frame, 1)  # ореентация камеры переворот вокруг оси y
 
@@ -738,14 +771,17 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             print("error: teplo_Thread.___teplo___ (tepl)")
             pass
         try:
-            inputPir = 0 #GinputPir = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
+            inputPir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
             tempPir = round(self.pirometr.get_object_1(), 1)
             # if GPIO.input(18) == False:#у нас есть отжатая кнопа?
             #    tempPir = round(self.pirometr.get_object_1(),1)
+            #print(inputPir, "!!!!!")
         except:  # Queue.Empty
             print("error: teplo_Thread.___teplo___ (Pir)")
             pass
         # print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
+        
+        
         return temp_tepl_Raw, temp_tepl, tempPir, inputPir
 
     def teplo_teplo(self):
@@ -759,7 +795,9 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         '''
         переводит темповые переменные в рабочие
         '''
-
+        if not self.if_active:
+            self.teplo_teplo()
+        
         self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
         #self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
         if not self.temp_tepl_arr is None:
@@ -783,7 +821,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if self.if_bd_10:
             print("Калибровочные данные:", out_last_tepl, out_last_pir)                                                                                
             self.out_last_tepl, self.out_last_pir = out_last_tepl, out_last_pir
-        
+
 
     def teplo(self):
         '''

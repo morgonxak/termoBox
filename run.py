@@ -90,7 +90,7 @@ class cv2_out_object():
         self.next_()
     
     def next_(self):
-    
+        
         self.frame, self.x_y_w_h, self.frame_delay_if, self.id_person_temp, self.fase_RGB_200_200 = self.frame_Th.out()
         # = frame_Th.id_person
         #if self.id_person is None:
@@ -138,7 +138,7 @@ class cv2_out_object():
         #print(rec_x,rec_y, rectangle_width, rectangle_height )
         cv2.rectangle(self.frame, (rec_x, rec_y), (rec_x + rectangle_width, rec_y + rectangle_height), self.color_green, self.lineType)#вывод квадр
     
-    def out_time(self, time):
+    def out_time(self, time:int = 0):
         '''
         ф-я вывода времени в квадрат
         ''' 
@@ -146,9 +146,7 @@ class cv2_out_object():
         q_w =self.x+10 #int(x+(w/2 - r_w*(9.7)))
         if self.x + self.w+self.y + self.h >0: 
             cv2.putText(self.frame, "{}".format(int(time)), (q_w, q_h), cv2.FONT_HERSHEY_SIMPLEX, self.r_w, self.color_text_time, self.thickness, cv2.LINE_AA)
-    
-    
-               
+
     def out_name(self): 
         '''
         ф-я вывода имени над квадратом
@@ -163,15 +161,36 @@ class cv2_out_object():
         '''
         ф-я вывода строчки информации о нижнет теплеке
         '''
+        '''
         temp_text_Pir = self.teplo_Th.Str_teplo(2)# получаем текст на тепл
         #if self.inputPir == 1:   
+        
         self.cv2_text_separator_putTex_rectangle(text=temp_text_Pir, x=5, y=5, lins_saze_text=40, fontScale=0.99, direction=0, 
                                                     color_text = self.color_text, color_rectangle = self.color_rectangle, 
                                                     if_all_width_frame = True, Align = 1)
+        '''
+        if self.inputPir == 1:   
+            cv2.rectangle(self.frame, (100, 50), (381, 5), self.color_rectangle, -1)
+            cv2.putText(self.frame, "Поднесите руку", (100, 39), self.FONT_, 0.99, self.color_text, self.thickness, self.lineType)
+        
         #    return 1  
         return self.inputPir == 1                                        
     
     def out_text_end(self):
+        if self.teplo_Th.if_valid() and self.teplo_Th.inputPir == 0:
+            cv2.rectangle(self.frame, (30, 365), (450, 320), self.color_green, -1)
+            cv2.putText(self.frame, "Все хорошо, проходите", (30, 354), self.FONT_, 0.99, self.color_text, self.thickness, self.lineType)
+
+            return True
+        else:
+            cv2.rectangle(self.frame, (66, 365), (415, 320), self.color_read, -1)
+            cv2.rectangle(self.frame, (54, 411), (426, 366), self.color_read, -1)
+            cv2.putText(self.frame, "Ошибка измерения.", (66, 354), self.FONT_, 0.99, self.color_text, self.thickness, self.lineType)
+            cv2.putText(self.frame, "Рука не обнаружена.", (54, 400), self.FONT_, 0.99, self.color_text, self.thickness, self.lineType)
+
+            return False
+            
+    def out_text_end1(self):
         '''
         выводим текст с писанием обработки
         возвращает: решениие можно ли пустить или нет
@@ -189,7 +208,6 @@ class cv2_out_object():
                 self.cv2_text_separator_putTex_rectangle(text="Все хорошо, проходите", x=x, y=y, direction=0, lins_saze_text=lins_saze_text, 
                                                         fontScale=fontScale, color_text = self.color_text, color_rectangle = self.color_green, 
                                                         if_all_width_frame = True, Align = 1)
-                
             else: 
             """
             Str_ = "Все хорошо, проходите" #self.Str_ID()
@@ -211,7 +229,7 @@ class cv2_out_object():
                                                     color_text = self.color_text, color_rectangle = self.color_read, if_all_width_frame = True, Align = 1 )
         return False
     
-    def Str_ID(self, if_=False):# текст на  id
+    def Str_ID(self, if_:bool=False):# текст на  id
         
         if if_:
             temp_text = "Не распознан"# "Здравствуйте Сотрудник ИЦ"
@@ -230,7 +248,7 @@ class cv2_out_object():
         #print(temp_text)
         return temp_text
         #  cv2_putTex_rectangle(frame, text, x, y , distance_lines, cv2_FONT=self.FONT_, fontScale, color_text, thickness,  color_font = self.color_rectangle, lineType): # вывод текста с фоном   
-    def cv2_putTex_rectangle(self, text, x, y  ,fontScale, color_rectangle, color_text, if_all_width_frame,Align): # вывод текста с фоном
+    def cv2_putTex_rectangle(self, text, x:int, y:int  ,fontScale, color_rectangle, color_text, if_all_width_frame:bool, Align:int): # вывод текста с фоном
         '''                                 ,distance_lines
         ф-я добавляет текст на изображение и фон к тексту
         text: текст
@@ -250,7 +268,7 @@ class cv2_out_object():
             [(text_width, text_height), baseline] = cv2.getTextSize(text, self.FONT_, fontScale, self.thickness)
             
             
-            distance_lines = text_height
+            #distance_lines = text_height
             #(frame_Th.width//2 - dist) 
             if text_width != 0 and text_height != 0:
                 #dist = int (text_height//2) #distance_lines
@@ -274,7 +292,8 @@ class cv2_out_object():
                     #if not if_all_width_frame:
                     #    cv2.rectangle(self.frame, (x-dist, y+dist), (x+text_width+dist, y-text_height-dist), color_rectangle, -1)
                     #cv2.putText(self.frame, text, (x, y), self.FONT_, fontScale, color_text, self.thickness, self.lineType)
-                
+                #print(text, " ", x, y)
+                #print( " ", x, y+baseline,x+text_width, y-(text_height+baseline))
                 x1, y1, w1, h1 = x, y, text_width , text_height  #+ text_height# distance_lines 
                 
                 #print(x, y, text_width, text_height, baseline)
@@ -283,7 +302,7 @@ class cv2_out_object():
         return x1, y1, w1, h1 # x, y, ширена, длина - текст
     
         #def cv2_text_separator_putTex_rectangle(frame, text, x, y, cv2_FONT, fontScale, color_text, thickness,  color_font = self.color_rectangle, lineType, direction=0): # вывод текста с фоном с направлением 1- вверх, 0 - вниз
-    def cv2_text_separator_putTex_rectangle(self , text, x, y, direction, lins_saze_text, fontScale, color_text ,  color_rectangle , if_all_width_frame, Align): # вывод текста с фоном с направлением
+    def cv2_text_separator_putTex_rectangle(self , text, x:int, y:int, direction:int, lins_saze_text:int, fontScale, color_text ,  color_rectangle , if_all_width_frame:bool, Align:int): # вывод текста с фоном с направлением
         '''
         ф-я выводит текст с фоном с направлением вверх или  вниз
         text: текст
@@ -298,7 +317,7 @@ class cv2_out_object():
         if_all_width_frame: растянуть фон текста на весь экран
         Align:выравнивание текста 0 - с лева, 1 - центр 
         '''
-        def text_separator(text, saze = 20):# делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)
+        def text_separator(text, saze:int = 20):# делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)
             '''
             ф-я разбивает текст на троки по размеру saze
             text: текст
@@ -345,7 +364,7 @@ class cv2_out_object():
         if text !=" " and text !="" and not text is None:
             #добавить возможность обработки нескольких строк
             list_text = text_separator(text, lins_saze_text) # делим строку над подстроки стараясь по размерм. (уберает 2е пробелы)   
-            saze_list = len(list_text) 
+            #saze_list = len(list_text) 
             
             [(text_width, text_height), baseline] = cv2.getTextSize(list_text[0], self.FONT_, fontScale, self.thickness)
             dist = int (text_height)
@@ -461,6 +480,10 @@ if not if_test_wimdovs:
     
 x = y = w = h = 0
 
+
+
+import threading
+from threading import Thread
 if __name__ == "__main__":
     # без обнуления   
     time_out_all = 6 # таймер на цикл
@@ -546,6 +569,10 @@ if __name__ == "__main__":
     if_pyglet = True
     if_save_bd = True
     frame_Th.next_()
+    
+    #th = Thread(target=sleepMe, args=(i, ), daemon = True)
+    #th.start()
+
     while(Active):
         
         if if_null:
@@ -558,11 +585,12 @@ if __name__ == "__main__":
 
         
         #frame_Th.next_()
-        frame, x_y_w_h,  frame_delay_if, id_person,fase_RGB_200_200 = frame_Th.out()
+        frame, x_y_w_h,  frame_delay_if, id_person, fase_RGB_200_200 = frame_Th.out()
         #frame = frame_Th.frame_orientation(frame) 
         
         cv2_out_ob.next_()    
-        if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
+        #if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
+        if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h):# and not frame_Th.frame_if: # при наличии оица
             #cv2_out_ob.next_()
             #print(x_y_w_h.get_())
             #print("wwwwwwwwwww")
@@ -571,17 +599,42 @@ if __name__ == "__main__":
             #print(time_if)
             if time_if < frame_time :
                 if_save_bd = True
-                list_save_Raw, list_save_Pir = save_numpy_bd_ob.out_last()
+                #list_save_Raw, list_save_Pir = save_numpy_bd_ob.out_last()
                 
                 #print(list_save_Raw, list_save_Pir)
-                teplo_Th.next_(list_save_Raw, list_save_Pir )
+                #teplo_Th.next_(list_save_Raw, list_save_Pir )
+                teplo_Th.next_(save_numpy_bd_ob.out_last() )
                 
                 #print(teplo_Th.teplo())
+                
+                
+                th1 = Thread(target=cv2_out_ob.out_name, args=())
+                #cv2_out_time = frame_time-(time_if)
+                #th2 = Thread(target=cv2_out_ob.out_time, args=(cv2_out_time))
+                
+                th3 = Thread(target=cv2_out_ob.out_text_if_teplo, args=())
+                
+                
+                th1.start()
+                #th2.start()
+                th3.start()
+                
+                
                 cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
                 cv2_out_ob.out_rectangle()
+                cv2_out_ob.out_time(frame_time-(time_if)+0.4)
+                
+                
+                th1.join()
+                #th2.join()
+                th3.join()
+                '''
                 cv2_out_ob.out_name()
                 cv2_out_ob.out_time(frame_time-(time_if)+0.4)
-                leg = (cv2_out_ob.out_text_if_teplo())
+                cv2_out_ob.out_text_if_teplo()
+                #leg = ( cv2_out_ob.out_text_if_teplo())
+                '''
+                leg = (cv2_out_ob.inputPir == 1)
                 if leg == 0:
                     pin_Th.pin_mig("blue", True)#
                     t = time.time()-(frame_time+0.1)
@@ -616,13 +669,17 @@ if __name__ == "__main__":
                 pin_Th.pin_on_time("door", 3)
                 if if_save_bd:
                     if_save_bd = False
+                    #dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
+                    #dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
                     dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
                     dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
                     #print("dataBase.pull_log")
                     #print(dataBase.get_agv_10_calibration_threshold())
-            #elif time.time() - t < time_out_all+3:
-            #    pin_Th.pin_all(False)
-            #    None
+            elif time_if < time_out_all+1:
+                pin_Th.pin_all(False)
+                
+                teplo_Th.next_(save_numpy_bd_ob.out_last() )
+                None
             else:
                 
                 frame_Th.zeroing()
@@ -642,10 +699,12 @@ if __name__ == "__main__":
            
 
         #frame = cv2_out_ob.get_()
-        if not frame is None :
+        #if not frame is None :
+        if not frame is None :#and not frame_Th.frame_if :
             #frame = cv2.UMat(frame)
 
             cv2.imshow('window', frame)
+            #cv2.imshow('window', frame)
         frame_Th.next_()
         
         """
@@ -666,10 +725,12 @@ if __name__ == "__main__":
         #if cv2.waitKey(1) & 0xFF == ord('q'):
         if cv2.waitKey(33) & 0xFF == ord('q') :
             #Open_Th.Stop_()
-            teplo_Th.Stop_()
+            if teplo_Th.if_active:
+                teplo_Th.Stop_()
             pin_Th.Stop_()
-            frame_Th.Stop_()
-            pyglet.app.run()
+            if frame_Th.if_active:
+                frame_Th.Stop_()
+            #pyglet.app.run()
             #pygame.quit()
             cv2.destroyAllWindows()
             Active = False
