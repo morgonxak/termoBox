@@ -481,9 +481,47 @@ if not if_test_wimdovs:
 x = y = w = h = 0
 
 
+from pydub import AudioSegment
+from pydub import playback
+
+#from playsound import playsound
+#import pygame
+
+#from pydub import AudioSegment
+#from pydub.playback import play
 
 import threading
 from threading import Thread
+
+from threading import Event
+
+class Song(Thread):
+    def __init__(self, filename):
+        """initializes the thread"""
+        Thread.__init__(self)
+        self.soundfilename = filename
+        self._stopper = Event()
+        self.setName('SoundThread'+filename)
+        self.song = AudioSegment.from_mp3(self.soundfilename)
+        self.Active_play = False
+        
+    def run(self):
+        """plays a given audio file"""
+        self.Active = True
+        while(self.Active):
+            if self.Active_play:
+                playback.play(self.song)
+                self.Active_play = False
+            time.sleep(1)
+                
+    def on(self):
+        self.Active_play = True
+        
+    def stop(Active_play):
+        self.Active
+        self._stopper.set()
+
+
 if __name__ == "__main__":
     # без обнуления   
     time_out_all = 6 # таймер на цикл
@@ -533,15 +571,29 @@ if __name__ == "__main__":
     
     save_numpy_bd_ob = save_numpy_bd_object(dataBase, teplo_Th)
     #"file://"+
-    STR_song_True = os.path.abspath(os.path.join(os.getcwd(), "./True.mp3"))
-    STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.mp3"))
-    print(STR_song_True)
-    print(STR_song_False)
+    STR_song_True = os.path.abspath(os.path.join(os.getcwd(), "./True.wav")) # mp3
+    STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.wav"))
+    #print(STR_song_True)
+    #print(STR_song_False)
+    
+    
+    #sound = AudioSegment.from_mp3(STR_song_True)
+    #play(sound)
+    
     
     
     song_True = AudioSegment.from_mp3(STR_song_True)
     song_False = AudioSegment.from_mp3(STR_song_False)
-
+    
+    
+    song_True1 = Song(STR_song_True)
+    song_False1 = Song(STR_song_False)
+    song_True1.start()
+    song_False1.start()
+    
+    
+    
+    
     #song_True = vlc.MediaPlayer(STR_song_True)
     #song_False = vlc.MediaPlayer(STR_song_False)
 
@@ -555,7 +607,7 @@ if __name__ == "__main__":
     #pygame.init()
     #song_True = pygame.mixer.Sound('True.mp3') #pygame.mixer.Sound('./True.mp3')
     ##os.path.abspath(os.path.join(os.getcwd(), './True.mp3')))
-    #song_False =pygame.mixer.Sound('False.mp3') #pygame.mixer.Sound('./False.mp3')
+    #so ng_False =pygame.mixer.Sound('False.mp3') #pygame.mixer.Sound('./False.mp3')
     ##os.path.abspath(os.path.join(os.getcwd(), './False.mp3'))) #pygame.mixer.Sound('./False.mp3')
     ##song_ = None
     
@@ -566,7 +618,7 @@ if __name__ == "__main__":
     
     #def zeroing():
     #  
-    if_pyglet = True
+    if_pyglet = False
     if_save_bd = True
     frame_Th.next_()
     
@@ -641,6 +693,8 @@ if __name__ == "__main__":
                 else:
                     pin_Th.pin_mig("red", True)
                 
+                if_pyglet = True
+                if_pyglet_shag = 0
             elif time_if < time_out_all:
                 #print(time_if)
                 #print(time_out_all)
@@ -648,25 +702,23 @@ if __name__ == "__main__":
                 #print("OOOOOOO")
                 leg = (cv2_out_ob.inputPir == 1)
                 if leg == 0:
-                    if cv2_out_ob.out_text_end():
+                    leg1 = cv2_out_ob.out_text_end()
+                    if leg1:
                         pin_Th.pin_on_off("green", True)
-                        if if_pyglet:
-                            #song_ = song_True
-                            if_pyglet = False
-                            #song_True.play()
-                            #playsound.playsound(STR_song_True, True)
-                            song_True.export("final.wav", format="wav")
                     else:
                         pin_Th.pin_on_off("red", True)
-                        if if_pyglet:
-                            #song_ = song_False
+                    
+                    if if_pyglet:
+                        if if_pyglet_shag <= 4:
+                            if_pyglet_shag += 1
+                        else:
+                            #th_pyglet = Thread(target=playback.play, args=(song_True if leg1 else song_False))
+                            #th_pyglet.start()
+                            if_pyglet_shag = 0
                             if_pyglet = False
-                            #playsound.playsound(STR_song_False, True)
-                            song_False.export("final.wav", format="wav")
-                            #song_False.play()
-                #if if_pyglet:
-                #    if_pyglet = False
-                #    song_.play()  
+                            #playback.play(song_True if leg1 else song_False)
+                            (song_True1 if leg1 else song_False1).on()
+
                     pin_Th.pin_on_time("door", 3)
                     if if_save_bd:
                         if_save_bd = False
@@ -683,7 +735,9 @@ if __name__ == "__main__":
                         #print(dataBase.get_agv_10_calibration_threshold())
             elif time_if < time_out_all+1:
                 pin_Th.pin_all(False)
-                
+
+                #os.remove(STR_song_True)
+                #os.remove(STR_song_False)
                 teplo_Th.next_(save_numpy_bd_ob.out_last() )
                 None
             else:
@@ -693,6 +747,7 @@ if __name__ == "__main__":
                 pin_Th.pin_all(False)
                 #t = time.time()
                 if_null = True 
+                
                 #print("!!!!!!")
                 None
 
