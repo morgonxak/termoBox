@@ -79,6 +79,32 @@ class BD:
             print(ValueError("Error get Users info: " + str(e)))
             return -1
 
+    def save_frame_image(self, frame, person_id=None):
+        data_time = str(datetime.datetime.now())
+        recognition = int(not person_id is None)
+        if_ = True
+
+
+
+        name_image = '{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), int(0), recognition)
+        #print(self.path_save_image)
+        str_ =  os.path.join(self.path_save_image, name_image + '.jpg')
+        
+        try:
+            #print(" save image {} ".format(type(frame)))
+            cv2.imwrite(str_, frame)
+        except BaseException as e:
+            if_ = False
+            name_image = "error save image {} {}".format(str_, e)
+            print("error save image {} {}".format(str_, e))
+             
+        except:
+            if_ = False
+            name_image = "error save image {}".format(str_)
+            print("error save image {}".format(str_))
+            
+        return if_, name_image
+    
     def pull_log(self, frame, flag_disease, person_id=None):
         '''
         Отправляет данные логирования
@@ -89,35 +115,38 @@ class BD:
         :param person_id: ели none то пользователь не известный
         :return: 0 все хорошо, -1 что то не так
         '''
-        try:
-
-            data_time = str(datetime.datetime.now())
-            recognition = int(not person_id is None)
-            if person_id is None: person_id = '00000000-0000-0000-0000-000000000000'
-
-
-            name_image = '{}_{}_{}_{}'.format(str(uuid.uuid4()), data_time.replace('-', '_').replace(' ', '_'), int(flag_disease), recognition)
-            #print(self.path_save_image)
-            str_ =  os.path.join(self.path_save_image, name_image + '.jpg')
+        if_, name_image = self.save_frame_image(frame,person_id)
+        if if_:
             try:
-                #print(" save image {} ".format(type(frame)))
-                cv2.imwrite(str_, frame)
-            except BaseException as e:
-                print("error save image {} {}".format(str_, e))
-            except:
-                print("error save image {}".format(str_))
+                data_time = str(datetime.datetime.now())
+                if person_id is None: person_id = '00000000-0000-0000-0000-000000000000'
+               
+                self.cur.execute(
+                    "INSERT INTO log (person_id, data_time, name_image) VALUES ('{}', '{}', '{}')".format(person_id, data_time, name_image)
+                )
+
+                self.con.commit()
+
+            except ZeroDivisionError as e:
+                print("Error pull log {}".format(e))
+                return -1
+        else:
+            return -1
+        return 0
+    def pull_log_Pir(self, Pir: float, Pir_ambient: float, inputPir: float):
+        try:
+            data_time = str(datetime.datetime.now())
+            
             self.cur.execute(
-                "INSERT INTO log (person_id, data_time, name_image) VALUES ('{}', '{}', '{}')".format(person_id, data_time, name_image)
+                "INSERT INTO log_Pir (data_time, Pir, Pir_ambient, inputPir) VALUES ('{}', '{}', '{}', '{}')".format(data_time, Pir, Pir_ambient, inputPir)
             )
 
             self.con.commit()
 
         except ZeroDivisionError as e:
-            print("Error pull log {}".format(e))
+            print("Error pull pull_log_Pir {}".format(e))
             return -1
-
-        return 0
-
+    
     def pull_temperature(self, data_teplovizor: list, data_pirometr: list, is_hand, is_fase):
         '''
         Заполняет базу с температурами

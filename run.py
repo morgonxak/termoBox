@@ -76,7 +76,7 @@ class cv2_out_object():
 
         self.x , self.y , self.w , self.h = 0, 0, 0, 0
         
-        self.temp_tepl_Raw , self.t_teplovizor , self.tempPir , self.inputPir = 0, 0, 0, 1
+        self.temp_tepl_Raw , self.t_teplovizor , self.tempPir , self.tempPir_ambient, self.inputPir = 0, 0, 0,0, 1
 
         """
         self.frame = None #переменная под фрейм с камеры
@@ -98,7 +98,7 @@ class cv2_out_object():
         self.id_person = self.id_person_temp
         
         self.x, self.y, self.w, self.h = self.x_y_w_h.get_() 
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.teplo_Th.teplo()
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir = self.teplo_Th.teplo()
         self.r_w = self.w / 200 #w/(23) #w/23 / 21.5
         
         self.fontScale = self.r_w/ 2
@@ -419,11 +419,11 @@ class save_numpy_bd_object():
     def ___add___(self): 
         
         
-        Raw, t_teplovizor, Pir, inputPir = self.teplo_Th.teplo()
+        Raw, t_teplovizor, Pir,tempPir_ambient, inputPir = self.teplo_Th.teplo()
         
         
         #if inputPir == 1: # /0 - есть рука / 1 - нет руки
-        self.dataBase.pull_log_background(self.teplo_Th.temp_tepl_arr, [Pir]) # 
+        #self.dataBase.pull_log_background(self.teplo_Th.temp_tepl_arr, [Pir]) # 
     
         #print(Raw, Pir)
         if len(self.list_save_Raw) >= self.list_len:
@@ -608,16 +608,16 @@ if __name__ == "__main__":
                 #print(teplo_Th.teplo())
                 
                 
-                th1 = Thread(target=cv2_out_ob.out_name, args=())
+                #th1 = Thread(target=cv2_out_ob.out_name, args=())
                 #cv2_out_time = frame_time-(time_if)
                 #th2 = Thread(target=cv2_out_ob.out_time, args=(cv2_out_time))
                 
-                th3 = Thread(target=cv2_out_ob.out_text_if_teplo, args=())
+                #th3 = Thread(target=cv2_out_ob.out_text_if_teplo, args=())
                 
                 
-                th1.start()
+                #th1.start()
                 #th2.start()
-                th3.start()
+                #th3.start()
                 
                 
                 cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
@@ -625,9 +625,9 @@ if __name__ == "__main__":
                 cv2_out_ob.out_time(frame_time-(time_if)+0.4)
                 
                 
-                th1.join()
+                #th1.join()
                 #th2.join()
-                th3.join()
+                #th3.join()
                 '''
                 cv2_out_ob.out_name()
                 cv2_out_ob.out_time(frame_time-(time_if)+0.4)
@@ -646,35 +646,41 @@ if __name__ == "__main__":
                 #print(time_out_all)
                 #print(time_if < time_out_all)
                 #print("OOOOOOO")
-                
-                if cv2_out_ob.out_text_end():
-                    pin_Th.pin_on_off("green", True)
-                    if if_pyglet:
-                        #song_ = song_True
-                        if_pyglet = False
-                        #song_True.play()
-                        #playsound.playsound(STR_song_True, True)
-                        song_True.export("final.wav", format="wav")
-                else:
-                    pin_Th.pin_on_off("red", True)
-                    if if_pyglet:
-                        #song_ = song_False
-                        if_pyglet = False
-                        #playsound.playsound(STR_song_False, True)
-                        song_False.export("final.wav", format="wav")
-                        #song_False.play()
+                leg = (cv2_out_ob.inputPir == 1)
+                if leg == 0:
+                    if cv2_out_ob.out_text_end():
+                        pin_Th.pin_on_off("green", True)
+                        if if_pyglet:
+                            #song_ = song_True
+                            if_pyglet = False
+                            #song_True.play()
+                            #playsound.playsound(STR_song_True, True)
+                            song_True.export("final.wav", format="wav")
+                    else:
+                        pin_Th.pin_on_off("red", True)
+                        if if_pyglet:
+                            #song_ = song_False
+                            if_pyglet = False
+                            #playsound.playsound(STR_song_False, True)
+                            song_False.export("final.wav", format="wav")
+                            #song_False.play()
                 #if if_pyglet:
                 #    if_pyglet = False
                 #    song_.play()  
-                pin_Th.pin_on_time("door", 3)
-                if if_save_bd:
-                    if_save_bd = False
-                    #dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
-                    #dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
-                    dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
-                    dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
-                    #print("dataBase.pull_log")
-                    #print(dataBase.get_agv_10_calibration_threshold())
+                    pin_Th.pin_on_time("door", 3)
+                    if if_save_bd:
+                        if_save_bd = False
+                        dataBase.save_frame_image(fase_RGB_200_200)
+                        dataBase.pull_log_Pir(teplo_Th.tempPir, teplo_Th.tempPir_ambient, teplo_Th.inputPir)   
+                        
+                      
+                        
+                        #dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
+                        #dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
+                        #dataBase.pull_log(fase_RGB_200_200, teplo_Th.if_valid(), id_person)   
+                        #dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
+                        #print("dataBase.pull_log")
+                        #print(dataBase.get_agv_10_calibration_threshold())
             elif time_if < time_out_all+1:
                 pin_Th.pin_all(False)
                 
@@ -693,7 +699,7 @@ if __name__ == "__main__":
         else:
             #cv2_out_ob.next_()
             cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
-            save_numpy_bd_ob.save() # обсчёт и сейв окружающей
+            #save_numpy_bd_ob.save() # обсчёт и сейв окружающей
         
 
            

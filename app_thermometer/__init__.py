@@ -743,20 +743,24 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         self.temp_tepl_arr = None
         self.temp_tepl_Raw = 0  # рабочая переменая для teplovizor
         self.t_teplovizor = 0  # рабочая переменая для перещитаного teplovizor
-        self.tempPir = 0  # рабочая переменая для pirometr
+        self.tempPir = 0  # рабочая температура с руки pirometr
+        self.tempPir_ambient = 0# рабочая температура окружающей среды pirometr
         self.inputPir = 1  # рабочая переменая наличия руки (дачик растояния) /0 - есть рука / 1 - нет руки
         # темповые данные
         self.next_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
         self.next_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.next_tempPir = 0 # темповая переменая для pirometr
+        self.next_tempPir = 0 # темповая температура с руки pirometr
+        self.next_tempPir_ambient = 0# темповая температура окружающей среды pirometr
         self.next_inputPir = 1 # темповая переменая наличия руки (дачик растояния)
         self.next_tepl_arr = None
 
         #ok
         self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
         self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.ok_tempPir = 0 # темповая переменая для pirometr
-        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния)        
+        self.ok_tempPir = 0 # темповая температура с руки pirometr
+        self.ok_tempPir_ambient = 0 # темповая температура окружающей среды pirometr
+        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния) 
+        
         
     def ___teplo___(self): 
         '''
@@ -773,6 +777,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         try:
             inputPir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
             tempPir = round(self.pirometr.get_object_1(), 1)
+            tempPir_ambient = round(self.pirometr.get_ambient(), 1)
             # if GPIO.input(18) == False:#у нас есть отжатая кнопа?
             #    tempPir = round(self.pirometr.get_object_1(),1)
             #print(inputPir, "!!!!!")
@@ -782,13 +787,13 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         # print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
         
         
-        return temp_tepl_Raw, temp_tepl, tempPir, inputPir
+        return temp_tepl_Raw, temp_tepl, tempPir,  tempPir_ambient, inputPir
 
     def teplo_teplo(self):
         '''
         сохраняет данные с модумей
         '''
-        self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir = self.___teplo___()
+        self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_tempPir_ambient , self.next_inputPir= self.___teplo___()
         self.next_tepl_arr = self.teplovizor.getreturnMaxrix() 
 
     def next_(self,out_last_tepl = 33.2, out_last_pir = 33.2):
@@ -798,8 +803,9 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if not self.if_active:
             self.teplo_teplo()
         
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir) 
+        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir,self.next_tempPir_ambient , self.next_inputPir) 
         #self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
+        '''
         if not self.temp_tepl_arr is None:
             del self.temp_tepl_arr
         self.temp_tepl_arr = None
@@ -809,25 +815,29 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         except:
             print("Error teplo_Thread.next_ getMaxrix")
             self.temp_tepl_arr = numpy.array([self.temp_tepl_Raw, self.temp_tepl_Raw])
-
+        
         #self.temp_tepl_arr = numpy.copy(self.next_tepl_arr) #self.teplovizor.getreturnMaxrix() #numpy.array([self.temp_tepl_Raw,self.temp_tepl_Raw])    
         data_time, self.threshold_pir_cof, self.threshold_teplovizor_cof = self.dataBase.get_calibration_threshold()
         '''
+        
+        '''
         self.out_last_tepl = out_last_tepl
         self.out_last_pir = out_last_pir
+        '''
+        
         '''
         # бд 10 первых
         self.if_bd_10, out_last_tepl, out_last_pir = dataBase.get_agv_10_calibration_threshold() 
         if self.if_bd_10:
             print("Калибровочные данные:", out_last_tepl, out_last_pir)                                                                                
             self.out_last_tepl, self.out_last_pir = out_last_tepl, out_last_pir
-
+        '''
 
     def teplo(self):
         '''
         возвращает рабочие переменные
         '''
-        return self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir
+        return self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir
 
         
     def zeroing(self):    
@@ -845,7 +855,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if tempPir is None: tempPir = self.tempPir
         if temp_tepl_Raw is None: temp_tepl_Raw = self.temp_tepl_Raw
         return temp_tepl_Raw, tempPir
-
+    """
     def valid_min(self, temp_tepl_Raw=None, tempPir=None):
         '''
         ищем рабочие минимальные данные
@@ -872,7 +882,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if self.inputPir == 0:
             tepl= round(numpy.max([tepl, tempPir]), 1)
         return tepl
-
+    """
     def if_valid_min(self, temp_tepl_Raw=None, tempPir=None):
         '''
         вохвращает: входят ли рабочие минимальные данные в границы допустимого
@@ -920,24 +930,24 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             return if_
         
         
-    def if_valid_max(self, temp_tepl_Raw=None, tempPir=None):
+    def if_valid_max1(self, temp_tepl_Raw=None, tempPir=None):
         '''
         вохвращает: входят ли рабочие максимальные данные в границы допустимого
         '''
-        """
+        '''
         tepl = self.valid_max(temp_tepl_Raw, tempPir)
         if self.___min___ <= tepl <= self.___max___:
             return True
         else:
             return False
-        """
+        '''
         temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
         Raw = abs(temp_tepl_Raw - self.out_last_tepl) 
         Pir = abs(tempPir - self.out_last_pir) 
         #Raw = temp_tepl_Raw - self.out_last_tepl 
         #Pir = tempPir - self.out_last_pir 
         #коффиц
-        """
+        '''
         print("Temperaturs Tepl:{} / Pir:{}".format(self.temp_tepl_Raw,self.tempPir))
         print("the temperature of the environment Tepl:{} / Pir:{}".format(self.out_last_tepl,self.out_last_pir))
         print("Coefficient Temperatur Tepl:{} / Pir:{}".format(Raw,Pir))
@@ -947,7 +957,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         if_ = abs (Raw - self.threshold_teplovizor_cof) <= 6 and abs (Pir - self.threshold_pir_cof) <= 6
         #print("if_valid_max {}".format(if_))
         return if_ 
-        """
+        '''
         # бд 10 первых
         threshold_teplovizor_cof = 10 #3 #верхние коффиц расхождения
         threshold_pir_cof = 10 #2 # верхние коффиц расхождения
@@ -966,9 +976,14 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             print("________________")
             """
             return if_
-        
-        
-        
+    def Calibration(self, tempPir, inputPir):   
+            return tempPir * 0 if inputPir ==1 else 1
+            
+    def if_valid_max(self, temp_tepl_Raw=None, tempPir=None):    
+        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
+        tempPir_ambient = self.tempPir_ambient
+        if_ = self.Calibration(tempPir, self.inputPir)>0 and True
+        return if_
         
     def if_valid(self, temp_tepl_Raw=None, tempPir=None):
         '''
@@ -981,12 +996,12 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #print(self.if_valid_max(tempPir, temp_tepl_Raw) and self.if_valid_min(tempPir, temp_tepl_Raw) )
         
         #if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and self.if_valid_min(temp_tepl_Raw, tempPir ) 
-        if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and True#self.if_valid_min(temp_tepl_Raw, tempPir ) 
+        if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) #and True#self.if_valid_min(temp_tepl_Raw, tempPir ) 
         # !?!?!?!? ЧТО ЭТО!???
         #print("if_valid {}".format(if_))
         return if_
 
-    def if_ok(self, temp_tepl_Raw,  t_teplovizor, tempPir , inputPir ): 
+    def if_ok(self, temp_tepl_Raw,  t_teplovizor, tempPir , tempPir_ambient, inputPir ): 
         '''
         self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
         self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
@@ -997,10 +1012,10 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #if self.if_valid():
         #self.ok_temp_tepl_Raw =
         #if (self.if_valid(tempPir, temp_tepl_Raw) or not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)
-        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir == 0) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir == 0) : 
-            self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, inputPir
+        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir == 0) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir != 1) : 
+            self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir ,self.ok_tempPir_ambient, self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, tempPir_ambient, inputPir
         self.ok_inputPir = inputPir  
-        return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_inputPir
+        return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_tempPir_ambient, self.ok_inputPir
 
     
     def valid_led(self,*led:pin_Thread, pin_time = 0.5):
@@ -1020,6 +1035,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         вохвращает: текст в зависимости от рабочих данных
         '''
         temt_str = ""
+        '''
         if self.if_valid():  # если рабочие данные входят в минимальные и в максимальные границы
             temt_str = 'Все хорошо,проходите: {}'.format(self.valid_min())  # берём меньшиее денные, дабы не пугать
         elif not self.if_valid_max():  # если рабочие данные  НЕ входят в максимальные границы
@@ -1028,7 +1044,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
 
         #elif not self.if_valid_min():  # если рабочие данные  НЕ входят в минимальные границы
         #    temt_str = 'Обратитесь к врачу: {}'.format(self.valid_min())
-
+        '''
         return temt_str
 
     def Str_teplo(self, tip=0):  # текст на  tepl
@@ -1042,7 +1058,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             if tip == 1:
                 return temp_text_telo
         if tip == 2 or tip == 0 :       
-            if self.inputPir == 0 :   
+            if self.inputPir != 1 :   
                 #temp_text_Pir = "Ваша температура по руке {}".format(self.tempPir)   
                 temp_text_Pir = "Получаем данные"
 
