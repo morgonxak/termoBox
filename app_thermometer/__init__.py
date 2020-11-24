@@ -1013,7 +1013,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         #if self.if_valid():
         #self.ok_temp_tepl_Raw =
         #if (self.if_valid(tempPir, temp_tepl_Raw) or not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)
-        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir == 0) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir != 1) : 
+        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir != 1) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir != 1) : 
             self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir ,self.ok_tempPir_ambient, self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, tempPir_ambient, inputPir
         self.ok_inputPir = inputPir  
         return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_tempPir_ambient, self.ok_inputPir

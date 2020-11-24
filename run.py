@@ -565,14 +565,11 @@ if __name__ == "__main__":
     # с обнулением
     time_temp1 = time.time() #начало сканирования лица #для шага в программе
 
-
     if_save_time = False # ускорение вывода
     if_save = True # было ли сохранение (можно ли сохранить )
 
     if_null = True #  (можно ли обнулить)
-    if_on = False # при выполнении проверки на всё
-    
-    
+    if_on = False # при выполнении проверки на всё    
     
     # для получения с потоков
     frame = None #переменная под фрейм с камеры
@@ -603,44 +600,8 @@ if __name__ == "__main__":
     STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.wav"))
     #print(STR_song_True)
     #print(STR_song_False)
-    
-    
-    #sound = AudioSegment.from_mp3(STR_song_True)
-    #play(sound)
-    
-    
-    
-    #song_True = AudioSegment.from_mp3(STR_song_True)
-    #song_False = AudioSegment.from_mp3(STR_song_False)
-    
-    
-    #song_True1 = Song(STR_song_True)
-    #song_False1 = Song(STR_song_False)
     song_ = None
-    #Song_start_if = False
-    #song_True1.start()
-    #song_False1.start()
-    
-    
-    
-    
-    #song_True = vlc.MediaPlayer(STR_song_True)
-    #song_False = vlc.MediaPlayer(STR_song_False)
 
-    
-    
-    #mixer.init()
-    ##mixer.music.load("play.mp3")    
-    #song_True = mixer.music.load("True.mp3")
-    #song_False = mixer.music.load("False.mp3")
-    
-    #pygame.init()
-    #song_True = pygame.mixer.Sound('True.mp3') #pygame.mixer.Sound('./True.mp3')
-    ##os.path.abspath(os.path.join(os.getcwd(), './True.mp3')))
-    #so ng_False =pygame.mixer.Sound('False.mp3') #pygame.mixer.Sound('./False.mp3')
-    ##os.path.abspath(os.path.join(os.getcwd(), './False.mp3'))) #pygame.mixer.Sound('./False.mp3')
-    ##song_ = None
-    
     #cv2_out_ob.next_()
     
     #Open_Th = Open_Thread() #управление действием при удачном прохождении
