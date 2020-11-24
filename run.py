@@ -499,13 +499,14 @@ class Song(Thread):
     def __init__(self, filename):
         """initializes the thread"""
         Thread.__init__(self)
-        self.soundfilename = filename
+        self.daemon = True
+        self.SoundFileName = filename
         self._stopper = Event()
         self.setName('SoundThread'+filename)
-        self.song = AudioSegment.from_mp3(self.soundfilename)
-        self.Active_play = False
+        self.song = AudioSegment.from_mp3(self.SoundFileName)
         
-    def run(self):
+        
+    def run1(self):
         """plays a given audio file"""
         self.Active = True
         while(self.Active):
@@ -513,18 +514,45 @@ class Song(Thread):
                 playback.play(self.song)
                 self.Active_play = False
             time.sleep(1)
+            
+    def run(self):  
+        self.Active_play = True    
+        playback.play(self.song)
+        self.Active_play = False        
                 
     def on(self):
-        self.Active_play = True
+        return self.Active_play #= True
         
     def stop(Active_play):
         self.Active
         self._stopper.set()
-
+        
+    #@staticmethod        
+def Song_start(Song_:Song, filename):
+    if_ = False
+    if not Song_ is None:
+        try:
+            if Song_.is_alive():
+                #print("join")
+                Song_.join()
+            else: 
+                #print("close")    
+                Song_.close() 
+                Song_ = None
+        except:
+            pass
+    
+    if Song_ is None:        
+    #if not Song_.is_alive():
+        if_ = True                                
+        #print("is_alive")       
+        Song_ = Song(filename)
+        Song_.start()
+    return if_
 
 if __name__ == "__main__":
     # без обнуления   
-    time_out_all = 6 # таймер на цикл
+    time_out_all = 6 # таймер на цикл (НАСТРАИВАТЬ В ЗАВИСИМОСТИ ОТ ДЛИНЫ ДОРОЖКИ ЗВУКА!!!!!)
 
     frame_time = 3 # время на распознование
     time_ = 0 # продолжительность скана лица
@@ -582,14 +610,16 @@ if __name__ == "__main__":
     
     
     
-    song_True = AudioSegment.from_mp3(STR_song_True)
-    song_False = AudioSegment.from_mp3(STR_song_False)
+    #song_True = AudioSegment.from_mp3(STR_song_True)
+    #song_False = AudioSegment.from_mp3(STR_song_False)
     
     
-    song_True1 = Song(STR_song_True)
-    song_False1 = Song(STR_song_False)
-    song_True1.start()
-    song_False1.start()
+    #song_True1 = Song(STR_song_True)
+    #song_False1 = Song(STR_song_False)
+    song_ = None
+    #Song_start_if = False
+    #song_True1.start()
+    #song_False1.start()
     
     
     
@@ -642,6 +672,8 @@ if __name__ == "__main__":
         
         cv2_out_ob.next_()    
         #if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h): # при наличии оица
+        #Song_start_if = False if song_ is None else song_.on()
+        
         if  not frame is None and x_y_w_h.if_(frame_Th.min_w_h):# and not frame_Th.frame_if: # при наличии оица
             #cv2_out_ob.next_()
             #print(x_y_w_h.get_())
@@ -708,17 +740,19 @@ if __name__ == "__main__":
                     else:
                         pin_Th.pin_on_off("red", True)
                     
-                    if if_pyglet:
-                        if if_pyglet_shag <= 4:
+                    if if_pyglet :
+                        if if_pyglet_shag <= -1:
                             if_pyglet_shag += 1
                         else:
                             #th_pyglet = Thread(target=playback.play, args=(song_True if leg1 else song_False))
                             #th_pyglet.start()
                             if_pyglet_shag = 0
-                            if_pyglet = False
+                            
+                            
                             #playback.play(song_True if leg1 else song_False)
-                            (song_True1 if leg1 else song_False1).on()
-
+                            Song_start_if = Song_start(song_, STR_song_True if leg1 else STR_song_False)
+                            if Song_start_if:
+                                if_pyglet = False
                     pin_Th.pin_on_time("door", 3)
                     if if_save_bd:
                         if_save_bd = False
@@ -733,7 +767,7 @@ if __name__ == "__main__":
                         #dataBase.pull_temperature(teplo_Th.temp_tepl_arr, [teplo_Th.tempPir], teplo_Th.inputPir,  frame_delay_if)
                         #print("dataBase.pull_log")
                         #print(dataBase.get_agv_10_calibration_threshold())
-            elif time_if < time_out_all+1:
+            elif time_if < time_out_all+1 :
                 pin_Th.pin_all(False)
 
                 #os.remove(STR_song_True)
@@ -753,6 +787,7 @@ if __name__ == "__main__":
 
         else:
             #cv2_out_ob.next_()
+            pin_Th.pin_all(False)
             cv2_out_ob.out_rectangle_backdrop(rectangle_width,rectangle_height)
             #save_numpy_bd_ob.save() # обсчёт и сейв окружающей
         

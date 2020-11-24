@@ -645,6 +645,7 @@ class pin_Thread(threading.Thread):  # работа со пином
         for i, val in enumerate(self.pin_):
             val.on(on)
             val.pin_on_off(on)
+            #print(val.text , " ",val.pin," ",val.ct," ",val.if_," ",val.mig, " ",val.time)
 
     def pin_off(self):  # выкл питание
         '''
