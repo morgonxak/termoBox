@@ -505,6 +505,10 @@ class Song(Thread):
         self.setName('SoundThread'+filename) #
         self.song = AudioSegment.from_mp3(self.SoundFileName)
         self.start_event = Event()
+        #print(filename, " ", len(self.song))
+        
+    def len_(self):
+        return len(self.song)/1000
         
     def run1(self):
         """plays a given audio file"""
@@ -556,10 +560,26 @@ def Song_start(Song_:Song, filename):
     return if_
 
 if __name__ == "__main__":
-    # без обнуления   
-    time_out_all = 6 # таймер на цикл (НАСТРАИВАТЬ В ЗАВИСИМОСТИ ОТ ДЛИНЫ ДОРОЖКИ ЗВУКА!!!!!)
+    STR_song_True = os.path.abspath(os.path.join(os.getcwd(), "./True.wav")) # mp3
+    STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.wav"))
+    #print(STR_song_True)
+    #print(STR_song_False)
+    song_True = Song(STR_song_True)
+    song_False = Song(STR_song_False)
+    song_True.start()
+    song_False.start()
 
+    # без обнуления   
     frame_time = 3 # время на распознование
+    time_out_all = frame_time +  int(max(song_True.len_(), song_False.len_(), 2) )+ 1
+    # таймер на цикл (2) (НАСТРАИВАТЬ В ЗАВИСИМОСТИ ОТ ДЛИНЫ ДОРОЖКИ ЗВУКА!!!!!)
+    #if time_out_all_ < 3:
+    #    time_out_all_ = 3
+    
+    #time_out_all = frame_time + time_out_all_
+    #time_out_all = frame_time + (time_out_all_ if time_out_all_ >= 3 else 3) 
+    
+    
     time_ = 0 # продолжительность скана лица
     Active = True # актив прогр
     color = (255, 255, 255) # цвет задника
@@ -593,7 +613,7 @@ if __name__ == "__main__":
     
     teplo_Th = teplo_Thread(dataBase) #данные с тепловизеров
     teplo_Th.start()#старт
-    teplo_Th.next_()
+    
     pin_Th = pin_Thread()#управление pin
     pin_Th.start()#старт
     
@@ -601,14 +621,7 @@ if __name__ == "__main__":
     
     save_numpy_bd_ob = save_numpy_bd_object(dataBase, teplo_Th)
     #"file://"+
-    STR_song_True = os.path.abspath(os.path.join(os.getcwd(), "./True.wav")) # mp3
-    STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.wav"))
-    #print(STR_song_True)
-    #print(STR_song_False)
-    song_True = Song(STR_song_True)
-    song_False = Song(STR_song_False)
-    song_True.start()
-    song_False.start()
+    
     
     #song_ = None
 
@@ -622,7 +635,7 @@ if __name__ == "__main__":
     if_pyglet = False
     if_save_bd = True
     frame_Th.next_()
-    
+    teplo_Th.next_()
     #th = Thread(target=sleepMe, args=(i, ), daemon = True)
     #th.start()
 

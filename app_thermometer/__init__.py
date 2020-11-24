@@ -111,8 +111,8 @@ class frame_Thread(threading.Thread):  # работа с камерой
         # установки
         self.If_Test_Foto = If_Test_Foto
         self.if_active = False  # активация pin_Thread
-        # self.daemon = True  # для отключения потока при остановке программы
-        self.start_event = threading.Event
+        self.daemon = True  # для отключения потока при остановке программы
+        self.start_event = threading.Event()
         self.setName('frame_Thread') #
         self.ROTATE_CLOCKWISE = cv2.ROTATE_90_CLOCKWISE
 
@@ -197,8 +197,8 @@ class frame_Thread(threading.Thread):  # работа с камерой
             self.fase_RGB_200_200_out = self.fase_RGB_200_200  # лицо
         
     def next_(self):
-        self.start_event.set()
         self.out_in = True
+        self.start_event.set()
         """
         if self.if_active:
             self.out_in = True
@@ -280,6 +280,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
     def run(self):
         print("Активация потока frame_Thread")
         while self.start_event.wait():
+        
             self.if_active = True
             if self.frame_if :    
                 self.___in_out___()
