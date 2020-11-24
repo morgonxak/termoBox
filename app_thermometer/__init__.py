@@ -13,6 +13,7 @@ import numpy
 from app_thermometer.moduls.dataBase import BD
 
 
+
 tip_bd = 1
 # dict_connect_settings = os.path.join('.','rc','database')
 # dict_connect_settings =     pathDataBase = os.path.join('.','rc','database').
@@ -70,9 +71,42 @@ import cv2
 from multiprocessing import Process, Queue
 import numpy
 import logging  ## лог
+from pydub import AudioSegment
+from pydub import playback
 
+class pirometr_Class():
+    def __init__(self, MLX90614):
+        self.pirometr = MLX90614
+        GPIO.setmode(GPIO.BCM) # для работы с GPIO
+        GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP) # подключение дачика растояния
 
+    def get_(self):
+        input_Pir = 1
+        Pir = 0
+        Pir_ambient = 0
+        
+        input_Pir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
+        Pir = round(self.pirometr.get_object_1(), 1)
+        Pir_ambient = round(self.pirometr.get_ambient(), 1)
+        '''
+        try:
+            input_Pir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
+            Pir = round(self.pirometr.get_object_1(), 1)
+            Pir_ambient = round(self.pirometr.get_ambient(), 1)
+            # if GPIO.input(18) == False:#у нас есть отжатая кнопа?
+            #    tempPir = round(self.pirometr.get_object_1(),1)
+            #print(inputPir, "!!!!!")
+        except:  # Queue.Empty
+            print("error: teplo_Thread.___teplo___ (Pir)")
+            #logging.info("except: teploPir (pirometr) {}".format( time.time())) 
+            #pass
+            #print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
+        '''
+        return input_Pir, Pir, Pir_ambient
 
+pirometr = pirometr_Class(MLX90614(SMBus(1)))     
+        
+        
 class x_y_w_h_object(object):
     def __init__(self):
         self.x =  self.y = self.w = self.h = 0
@@ -99,6 +133,70 @@ class x_y_w_h_object(object):
             return y:y + w, x:x + h        
     '''
 
+
+class Song(threading.Thread):
+    def __init__(self, filename):
+        """initializes the thread"""
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.SoundFileName = filename
+        #self._stopper = Event()
+        self.setName('SoundThread'+filename) #
+        self.song = AudioSegment.from_mp3(self.SoundFileName)
+        self.start_event = threading.Event()
+        #print(filename, " ", len(self.song))
+        
+    def len_(self):
+        return len(self.song)/1000
+        
+    def run1(self):
+        """plays a given audio file"""
+        self.Active = True
+        while(self.Active):
+            if self.Active_play:
+                playback.play(self.song)
+                self.Active_play = False
+            time.sleep(1)
+            
+    def run(self):  
+        while self.start_event.wait():
+            self.Active_play = True 
+            self.start_event.clear()   
+            playback.play(self.song)
+            self.Active_play = False        
+                
+    def on(self):
+        return self.Active_play #= True
+        
+    def restart(self):
+        self.start_event.set()
+    
+    #def stop(Active_play):
+    #    self.Active
+    #    self._stopper.set()
+        
+    #@staticmethod        
+def Song_start(Song_:Song, filename):
+    if_ = False
+    if not Song_ is None:
+        try:
+            if Song_.is_alive():
+                #print("join")
+                Song_.join()
+            else: 
+                #print("close")    
+                Song_.close() 
+                Song_ = None
+        except:
+            pass
+    
+    if Song_ is None:        
+    #if not Song_.is_alive():
+        if_ = True                                
+        #print("is_alive")       
+        Song_ = Song(filename)
+        Song_.start()
+    return if_
 
 class frame_Thread(threading.Thread):  # работа с камерой
 
@@ -744,7 +842,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         GPIO.setmode(GPIO.BCM) # для работы с GPIO
         GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP) # подключение дачика растояния
         self.teplovizor = amg88() # подключение верхнего тепловизора 
-        self.pirometr = MLX90614(SMBus(1)) # подключение нижнего тепловизора
+        self.pirometr = pirometr()#MLX90614(SMBus(1)) # подключение нижнего тепловизора
         #границы допустимого
         self.___min___ = 0.0 #20
         self.___max___ = 39.2
@@ -801,6 +899,9 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         except:  # Queue.Empty
             print("error: teplo_Thread.___teplo___ (tepl)")
             pass
+            
+        inputPir, tempPir, tempPir_ambient = self.pirometr.get_()  
+        """
         try:
             inputPir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
             tempPir = round(self.pirometr.get_object_1(), 1)
@@ -812,7 +913,7 @@ class teplo_Thread(threading.Thread):  # работа с температура�
             print("error: teplo_Thread.___teplo___ (Pir)")
             pass
         # print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
-        
+        """
         
         return temp_tepl_Raw, temp_tepl, tempPir,  tempPir_ambient, inputPir
 
