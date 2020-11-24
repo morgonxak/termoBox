@@ -501,10 +501,10 @@ class Song(Thread):
         Thread.__init__(self)
         self.daemon = True
         self.SoundFileName = filename
-        self._stopper = Event()
-        self.setName('SoundThread'+filename)
+        #self._stopper = Event()
+        self.setName('SoundThread'+filename) #
         self.song = AudioSegment.from_mp3(self.SoundFileName)
-        
+        self.start_event = Event()
         
     def run1(self):
         """plays a given audio file"""
@@ -516,16 +516,21 @@ class Song(Thread):
             time.sleep(1)
             
     def run(self):  
-        self.Active_play = True    
-        playback.play(self.song)
-        self.Active_play = False        
+        while self.start_event.wait():
+            self.Active_play = True 
+            self.start_event.clear()   
+            playback.play(self.song)
+            self.Active_play = False        
                 
     def on(self):
         return self.Active_play #= True
         
-    def stop(Active_play):
-        self.Active
-        self._stopper.set()
+    def restart(self):
+        self.start_event.set()
+    
+    #def stop(Active_play):
+    #    self.Active
+    #    self._stopper.set()
         
     #@staticmethod        
 def Song_start(Song_:Song, filename):
@@ -569,7 +574,7 @@ if __name__ == "__main__":
     if_save = True # было ли сохранение (можно ли сохранить )
 
     if_null = True #  (можно ли обнулить)
-    if_on = False # при выполнении проверки на всё    
+    #if_on = False # при выполнении проверки на всё    
     
     # для получения с потоков
     frame = None #переменная под фрейм с камеры
@@ -588,7 +593,7 @@ if __name__ == "__main__":
     
     teplo_Th = teplo_Thread(dataBase) #данные с тепловизеров
     teplo_Th.start()#старт
-    
+    teplo_Th.next_()
     pin_Th = pin_Thread()#управление pin
     pin_Th.start()#старт
     
@@ -600,7 +605,12 @@ if __name__ == "__main__":
     STR_song_False = os.path.abspath(os.path.join(os.getcwd(), "./False.wav"))
     #print(STR_song_True)
     #print(STR_song_False)
-    song_ = None
+    song_True = Song(STR_song_True)
+    song_False = Song(STR_song_False)
+    song_True.start()
+    song_False.start()
+    
+    #song_ = None
 
     #cv2_out_ob.next_()
     
@@ -627,7 +637,7 @@ if __name__ == "__main__":
          
 
         
-        #frame_Th.next_()
+        frame_Th.next_()
         frame, x_y_w_h,  frame_delay_if, id_person, fase_RGB_200_200 = frame_Th.out()
         #frame = frame_Th.frame_orientation(frame) 
         
@@ -648,7 +658,8 @@ if __name__ == "__main__":
                 
                 #print(list_save_Raw, list_save_Pir)
                 #teplo_Th.next_(list_save_Raw, list_save_Pir )
-                teplo_Th.next_(save_numpy_bd_ob.out_last() )
+                teplo_Th.next_()
+                #teplo_Th.next_(save_numpy_bd_ob.out_last() )
                 
                 #print(teplo_Th.teplo())
                 
@@ -711,9 +722,13 @@ if __name__ == "__main__":
                             
                             
                             #playback.play(song_True if leg1 else song_False)
+                            """
                             Song_start_if = Song_start(song_, STR_song_True if leg1 else STR_song_False)
                             if Song_start_if:
                                 if_pyglet = False
+                            """
+                            (song_True if leg1 else song_False).restart()
+                            if_pyglet = False
                     pin_Th.pin_on_time("door", 3)
                     if if_save_bd:
                         if_save_bd = False

@@ -4,6 +4,7 @@ import time
 import pickle
 from app_thermometer.moduls.processing_faceId import processing_faceid
 import threading
+
 from app_thermometer.moduls.amg88 import amg88
 import RPi.GPIO as GPIO
 from app_thermometer.moduls.mlx90614 import MLX90614
@@ -71,6 +72,7 @@ import numpy
 import logging  ## лог
 
 
+
 class x_y_w_h_object(object):
     def __init__(self):
         self.x =  self.y = self.w = self.h = 0
@@ -110,7 +112,8 @@ class frame_Thread(threading.Thread):  # работа с камерой
         self.If_Test_Foto = If_Test_Foto
         self.if_active = False  # активация pin_Thread
         # self.daemon = True  # для отключения потока при остановке программы
-
+        self.start_event = threading.Event
+        self.setName('frame_Thread') #
         self.ROTATE_CLOCKWISE = cv2.ROTATE_90_CLOCKWISE
 
         self.time = 0.0  # шаг повторения по времени
@@ -150,7 +153,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
         self.fase_RGB_200_200 = None  # под скрин лица
 
         self.time_temp1 = 0
-        self.frame_delay = 0  # задержка на пропажу выделения
+        #self.frame_delay = 0  # задержка на пропажу выделения
 
         self.flag_id_on = False  # найден ли id
         self.id_person = None  # переменная под персонал
@@ -194,11 +197,15 @@ class frame_Thread(threading.Thread):  # работа с камерой
             self.fase_RGB_200_200_out = self.fase_RGB_200_200  # лицо
         
     def next_(self):
+        self.start_event.set()
+        self.out_in = True
+        """
         if self.if_active:
             self.out_in = True
         else:
             self.___run___()
             self.___in_out___(True)
+        """
         
     def out(self):
         # while self.out_in: None #???????????????
@@ -213,7 +220,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
             self.if_active = False
             self.out_in = True
     
-    def ___run___(self, t:int = 0):
+    def ___run___(self):# , t:int = 0
         #t = time.time()
         #time_ = t - self.time_temp1  # time.time()
         self.frame_image()  # или скрин или фото
@@ -221,7 +228,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
 
         if self.x_y_w_h_temp.if_(self.min_w_h):
             self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
-            self.frame_delay = t
+            # self.frame_delay = t
             self.frame_delay_if = True
             # self.frame_delay_time = self.frame_time_out-time_
         # elif (0 <= (t - self.frame_delay) <= self.frame_delay_time ):
@@ -248,11 +255,9 @@ class frame_Thread(threading.Thread):  # работа с камерой
         self.hread(True)
         if not self.If_Test_Foto:
             self.cap.release()
-        self.if_on = False
+        #self.if_on = False
     
-    
-    
-    def run(self):
+    def run1(self):
         print("Активация потока frame_Thread")
         self.if_active = True
         while self.if_active:
@@ -260,7 +265,7 @@ class frame_Thread(threading.Thread):  # работа с камерой
             t = 0
             if time.time() - t >= self.time:
                 t = time.time()
-                self.___run___(t)
+                self.___run___()#t
                 if self.out_in and self.frame_if :    
                     self.___in_out___()
                     #self.out_in = False    
@@ -270,6 +275,22 @@ class frame_Thread(threading.Thread):  # работа с камерой
                     while not self.out_in and self.if_active:  
                         #print("time.sleep(0.01)")
                         time.sleep(0.01)
+        self.___end___()
+    
+    def run(self):
+        print("Активация потока frame_Thread")
+        while self.start_event.wait():
+            self.if_active = True
+            if self.frame_if :    
+                self.___in_out___()
+                    #self.out_in = False 
+            #self.if_on = True
+
+            self.___run___()#t
+                   
+            self.if_active = False        
+        
+            self.start_event.clear()
         self.___end___()
 
     def hread(self, if_zeroing=False):
@@ -713,6 +734,10 @@ class teplo_Thread(threading.Thread):  # работа с температура�
     def __init__(self, dataBase:BD):
         super().__init__()
         # настройка
+        
+        self.setName('teplo_Thread') #
+        self.start_event = threading.Event()
+        
         self.dataBase = dataBase
         self.daemon = True # для отключения потока при остановке программы
         GPIO.setmode(GPIO.BCM) # для работы с GPIO
@@ -801,11 +826,14 @@ class teplo_Thread(threading.Thread):  # работа с температура�
         '''
         переводит темповые переменные в рабочие
         '''
+        """
         if not self.if_active:
             self.teplo_teplo()
-        
+        """
         self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir,self.next_tempPir_ambient , self.next_inputPir) 
         #self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
+        
+        self.start_event.set()
         '''
         if not self.temp_tepl_arr is None:
             del self.temp_tepl_arr
@@ -1085,14 +1113,17 @@ class teplo_Thread(threading.Thread):  # работа с температура�
 
     def run(self):
         print("Активация потока teplo_Thread ")
-        t = time.time()
-        self.if_active = True
+        #t = time.time()
+        
+        while self.start_event.wait():
 
-        while self.if_active:
+        
+        #while self.if_active:
             self.if_on = True
-            if time.time() - t >= self.time:
-                t = time.time()
-                self.teplo_teplo()
+            #if time.time() - t >= self.time:
+            #    t = time.time()
+            self.teplo_teplo()
+            
         self.if_on = False
 
 
