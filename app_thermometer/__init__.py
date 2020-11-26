@@ -4,7 +4,6 @@ import time
 import pickle
 from app_thermometer.moduls.processing_faceId import processing_faceid
 import threading
-
 from app_thermometer.moduls.amg88 import amg88
 import RPi.GPIO as GPIO
 from app_thermometer.moduls.mlx90614 import MLX90614
@@ -33,59 +32,96 @@ processing_recognition = processing_faceid(pathProject)
 
 dataBase = BD(dict_connect_settings)
 
-########################################
-# Buzer
+
+
+"""
+
+dict_connect_settings = './rc/database.bd'
+
+
+
+
+path_haarcascade = os.path.abspath(
+    os.path.join(os.getcwd(), './app_thermometer/rc/haarcascade_frontalface_default.xml'))
+#Recognition
+face_detector = cv2.CascadeClassifier(path_haarcascade)
+pathProject = os.path.abspath(os.path.join(os.getcwd(), './rc'))
+
+
+k = 1
+path_cvm_model = os.path.join(pathProject, 'svm_model_{}.pk'.format(k))
+path_knn_model = os.path.join(pathProject, 'knn_model_{}.pk'.format(k))
+
+
+
+processing_recognition = processing_faceid(pathProject)
+"""
+##########################
+
+teplovizor = amg88()
+#pirometr = MLX90614(SMBus(1))
+"""
+dataBase = BD(dict_connect_settings)
+
 GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+#led
+led_red_pin = 23
+led_green_pin = 24
 pinBuzer = 25
+
+GPIO.setup(led_red_pin, GPIO.OUT)
+GPIO.setup(led_green_pin, GPIO.OUT)
+
+GPIO.output(led_red_pin, GPIO.HIGH)
+GPIO.output(led_green_pin, GPIO.HIGH)
+########################################
+#Buzer
 GPIO.setup(pinBuzer, GPIO.OUT)
 #######################
 p = GPIO.PWM(pinBuzer, 1000)  # channel=12 frequency=50Hz
+"""
 
-
-def on_buzer(mode):
-    '''
-    РАбота с пещалкой
-    :param mode: True - ПРоходит  False - НЕ пройдет
-
-    :return:
-    '''
-    global p
-    print("mode {}".format(mode))
-    if mode:
-        p.start(0)
-        p.ChangeDutyCycle(50)
-        time.sleep(0.3)
-        p.ChangeDutyCycle(0)
-    else:
-        for _ in range(2):
-            p.ChangeDutyCycle(50)
-            time.sleep(1)
-            p.ChangeDutyCycle(0)
-            time.sleep(0.5)
-
-
-##################################
-
-import cv2
-from multiprocessing import Process, Queue
-import numpy
-import logging  ## лог
-from pydub import AudioSegment
-from pydub import playback
+import busio
+import digitalio
+import board
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
 
 class pirometr_Class():
-    def __init__(self, MLX90614):
+    def __init__(self, MLX90614, board, MCP):
+        
         self.pirometr = MLX90614
-        GPIO.setmode(GPIO.BCM) # для работы с GPIO
-        GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP) # подключение дачика растояния
+        
+        #GPIO.setmode(GPIO.BCM) # для работы с GPIO
+        #GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP) # подключение дачика растояния
+        
+        self.board = board
+        self.MCP = MCP
+        
+        
+        self.spi = busio.SPI(clock=self.board.SCK, MISO=self.board.MISO, MOSI=self.board.MOSI)
+
+        # create the cs (chip select)
+        self.cs = digitalio.DigitalInOut(self.board.D5)
+
+        # create the mcp object
+        self.mcp = MCP.MCP3008(self.spi, self.cs)
+        
+        # create an analog input channel on pin 0
+        self.chan = AnalogIn(self.mcp, self.MCP.P0)
 
     def get_(self):
         input_Pir = 1
         Pir = 0
         Pir_ambient = 0
         
-        input_Pir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
+        input_Pir = round(10* pow( ( self.chan.value * 0.0048828125),int(-1))  *100, 1)
+        
+        #print("input_Pir = ", input_Pir)
+        
+        #input_Pir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
         Pir = round(self.pirometr.get_object_1(), 1)
         Pir_ambient = round(self.pirometr.get_ambient(), 1)
         '''
@@ -104,36 +140,12 @@ class pirometr_Class():
         '''
         return input_Pir, Pir, Pir_ambient
 
-pirometr = pirometr_Class(MLX90614(SMBus(1)))     
-        
-        
-class x_y_w_h_object(object):
-    def __init__(self):
-        self.x =  self.y = self.w = self.h = 0
-
-    def set_(self, x=0, y=0, w=0, h=0):
-        self.x, self.y, self.w, self.h = x, y, w, h
-
-    def set_(self, x=(0, 0, 0, 0)):
-        self.x, self.y, self.w, self.h = x
-
-    def if_(self, min_=None):
-        temp = (self.x + self.y + self.w + self.h != 0)
-
-        if not min_ is None:
-            temp = temp and (min_ <= self.w or min_ <= self.h)
-        return temp
-
-    def get_(self):
-        return self.x, self.y, self.w, self.h
-
-    '''   
-    def get_gran(self):
-        with self as im:
-            return y:y + w, x:x + h        
-    '''
+pirometr = pirometr_Class(MLX90614(SMBus(1)),board,  MCP)     
+       
 
 
+from pydub import AudioSegment
+from pydub import playback
 class Song(threading.Thread):
     def __init__(self, filename):
         """initializes the thread"""
@@ -175,379 +187,7 @@ class Song(threading.Thread):
     #    self.Active
     #    self._stopper.set()
         
-    #@staticmethod        
-def Song_start(Song_:Song, filename):
-    if_ = False
-    if not Song_ is None:
-        try:
-            if Song_.is_alive():
-                #print("join")
-                Song_.join()
-            else: 
-                #print("close")    
-                Song_.close() 
-                Song_ = None
-        except:
-            pass
-    
-    if Song_ is None:        
-    #if not Song_.is_alive():
-        if_ = True                                
-        #print("is_alive")       
-        Song_ = Song(filename)
-        Song_.start()
-    return if_
-
-class frame_Thread(threading.Thread):  # работа с камерой
-
-    def __init__(self, If_Test_Foto=False):
-        '''
-        If_Test_Foto: вывод на экран фото(True) или вывод на экран видео с камеры(False)
-        '''
-        super().__init__()
-        
-        # установки
-        self.If_Test_Foto = If_Test_Foto
-        self.if_active = False  # активация pin_Thread
-        self.daemon = True  # для отключения потока при остановке программы
-        self.start_event = threading.Event()
-        self.setName('frame_Thread') #
-        self.ROTATE_CLOCKWISE = cv2.ROTATE_90_CLOCKWISE
-
-        self.time = 0.0  # шаг повторения по времени
-        self.out_in = False  # для чтения с потока
-        self.cap = None  # переменная для подключения к камере
-        self.image = None
-        if not self.If_Test_Foto:
-            self.cap = cv2.VideoCapture(0)  # подключение к камере
-        else:
-            self.image = cv2.imread(os.path.abspath("./Test.jpg"))
-
-        self.frame = None  # переменная под фрейм с камеры
-        self.ret = False  # фрейм прочитан корректно?
-        if 0 == self.frame_image():  # получение кодра или фото
-            self.height, self.width = 0, 0  # размер кадра
-            self.height, self.width = self.height_width_size()  # размер кадра
-            self.min_w_h = self.min_w_h_size()  # размер минимальных границ для выделения
-        else:
-            print("frame_Thread.frame_image return -1")
-            logging.error("frame_Thread.frame_image return -1")
-            raise Exception("frame_Thread.frame_image return -1")
-
-        del self.frame
-        
-        self.frame_if = False  # для чтения с потока
-        self.frame = None  # переменная под фрейм с камеры
-        self.return_Id_to_face = Queue()  # очередь для снятия инфы с потока
-
-        self.frame_delay_time = 0  # время задержки на пропажу выделения
-
-        self.id_hread = None  # для потока
-        # self.if_null_hread = False #  (можно ли обнулить именно id_hread )
-        self.x_y_w_h = x_y_w_h_object()
-        self.x_y_w_h_temp = x_y_w_h_object()
-        self.frame_delay_if = True  # задержано ли выделение
-        # self.frame_time_out = 5# время задержки на пропажу выделения
-        self.fase_RGB_200_200 = None  # под скрин лица
-
-        self.time_temp1 = 0
-        #self.frame_delay = 0  # задержка на пропажу выделения
-
-        self.flag_id_on = False  # найден ли id
-        self.id_person = None  # переменная под персонал
-
-        # для вывода
-        self.frame_out = None  # кадр
-        self.x_y_w_h_out = x_y_w_h_object()  # положение лица
-        self.frame_delay_if_out = True  # отсутствие задержки
-        self.id_person_out = None  # id_person
-        self.fase_RGB_200_200_out = None  # лицо
-
-        # обнуление
-        self.zeroing()  # обнуление переменных
-
-    def ___in_out___(self, if_:bool = False):
-
-        #self.frame_out.delete()
-        #self.fase_RGB_200_200_out.delete()
-        #self.frame_out= None 
-        #self.frame_out = numpy.copy(self.frame) # кадр self.frame.copy()
-        
-        #if not(self.frame_out == self.frame).all():
-        if self.if_active:
-            if self.frame_if  or if_: #and self.out_in
-                self.frame_if = False
-            
-                self.frame_out = numpy.copy(self.frame) if not self.frame is None else self.frame_out # кадр
-                self.x_y_w_h_out.set_(self.x_y_w_h.get_())#положение лица
-                self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
-                self.id_person_out = self.id_person # id_person
-                
-                #self.fase_RGB_200_200_out = None
-                #self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) # лицо self.fase_RGB_200_200.copy()
-                self.fase_RGB_200_200_out = numpy.copy(self.fase_RGB_200_200) if not self.fase_RGB_200_200 is None else self.fase_RGB_200_200_out  # лицо
-            self.out_in = False 
-        else:
-            self.frame_out = self.frame# кадр
-            self.x_y_w_h_out = self.x_y_w_h#.get_()#положение лица
-            self.frame_delay_if_out = self.frame_delay_if #наличие задержки 
-            self.id_person_out = self.id_person # id_person
-            self.fase_RGB_200_200_out = self.fase_RGB_200_200  # лицо
-        
-    def next_(self):
-        self.out_in = True
-        self.start_event.set()
-        """
-        if self.if_active:
-            self.out_in = True
-        else:
-            self.___run___()
-            self.___in_out___(True)
-        """
-        
-    def out(self):
-        # while self.out_in: None #???????????????
-        #print("!!! {}".format( type(self.frame))).copy().copy()
-        return self.frame_out if not self.frame_out is None else None, self.x_y_w_h_out, self.frame_delay_if_out, self.id_person_out, self.fase_RGB_200_200_out if not self.fase_RGB_200_200_out is None else None  ##.get_()
-
-    def Stop_(self):
-        '''
-        остановка цикла потока
-        '''
-        if self.if_active:
-            self.if_active = False
-            self.out_in = True
-    
-    def ___run___(self):# , t:int = 0
-        #t = time.time()
-        #time_ = t - self.time_temp1  # time.time()
-        self.frame_image()  # или скрин или фото
-        self.x_y_w_h_temp.set_(self.faces_x_y())
-
-        if self.x_y_w_h_temp.if_(self.min_w_h):
-            self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
-            # self.frame_delay = t
-            self.frame_delay_if = True
-            # self.frame_delay_time = self.frame_time_out-time_
-        # elif (0 <= (t - self.frame_delay) <= self.frame_delay_time ):
-        else:
-            self.frame_delay_if = False
-        # else:
-        #    self.x_y_w_h.set_(self.x_y_w_h_temp.get_())
-        #    self.frame_delay_if = True
-        #    #self.time_temp1 = time.time() #XXXXXXXXXXXXXXXX убрать при использовании  zeroing()
-
-        #print(t - self.frame_delay)
-        #print(self.frame_delay_time)
-        #print(self.x_y_w_h.get_())
-        if self.x_y_w_h.if_(self.min_w_h): # and not self.if_null_hread:
-            x , y , w, h = self.x_y_w_h.get_() 
-            #cv2.rectangle(self.frame, (x, y), (x + w, y + h), (255, 0, 0), 2)#вывод квадр
-            #print("self.hread()1 {}".format( self.id_person))
-            self.hread()
-            #print("self.hread()2 {}".format( self.id_person))
-        #self.frame = self.frame_orientation(self.frame)
-
-                
-    def ___end___(self)  :      
-        self.hread(True)
-        if not self.If_Test_Foto:
-            self.cap.release()
-        #self.if_on = False
-    
-    def run1(self):
-        print("Активация потока frame_Thread")
-        self.if_active = True
-        while self.if_active:
-            self.if_on = True
-            t = 0
-            if time.time() - t >= self.time:
-                t = time.time()
-                self.___run___()#t
-                if self.out_in and self.frame_if :    
-                    self.___in_out___()
-                    #self.out_in = False    
-                    
-                
-                    #print(not self.out_in and self.if_active)
-                    while not self.out_in and self.if_active:  
-                        #print("time.sleep(0.01)")
-                        time.sleep(0.01)
-        self.___end___()
-    
-    def run(self):
-        print("Активация потока frame_Thread")
-        while self.start_event.wait():
-        
-            self.if_active = True
-            if self.frame_if :    
-                self.___in_out___()
-                    #self.out_in = False 
-            #self.if_on = True
-
-            self.___run___()#t
-                   
-            self.if_active = False        
-        
-            self.start_event.clear()
-        self.___end___()
-
-    def hread(self, if_zeroing=False):
-        def clearQueue():  # обнуление очереди
-            try:
-                while True:
-                    self.return_Id_to_face.get_nowait()
-            except:  # Queue.Empty
-                pass
-
-
-        if not if_zeroing:   
-            #if not(self.id_person is None or self.id_person == -1)
-            if self.id_hread is None and self.id_person is None:# не существует ли процесс 
-                if self.frame_delay_if and not self.frame is None:
-
-                    x , y , w, h = self.x_y_w_h.get_() 
-                    self.fase_RGB_200_200 = numpy.copy((self.frame)[y:y + w, x:x + h]) #self.numpy_copy() #numpy.copy((self.frame)[y:y + w, x:x + h]) 
-                    #self.fase_RGB_200_200 = (self.frame[y:y + w, x:x + h]).copy() #self.numpy_copy() #numpy.copy((self.frame)[y:y + w, x:x + h]) 
-                    clearQueue() # обнуление очереди
-                    #self.id_hread = Process(target=self.Id_to_face, args=(self.fase_RGB_200_200,self.return_Id_to_face))#, daemon=True
-                    self.id_hread = Process(target=self.Id_to_face)#, daemon=True
-                    self.id_hread.start()#запуск потока по поиску в бд  
-            elif not self.id_hread is None : # существует ли процесс 
-                if not self.id_hread.is_alive(): # завершён ли процесс        
-
-                    try:
-                        id_person_temp = self.return_Id_to_face.get()  # вытаскиваем ID
-                    except:
-                        logging.info("except: return_Id_to_face.get() {}".format(time.time()))
-                        id_person_temp = -1
-                    try:
-                        self.id_hread.terminate()
-                    except:
-                        logging.info("except: frame_Thread.hread.terminate {}".format(time.time()))
-                    if self.id_person == -1: self.id_person = None
-                    if self.id_person is None: self.id_person = id_person_temp
-                    if self.id_person is None or self.id_person == -1:  # если нет id, то попытка ещё раз его получить с нового фрейма
-                        try:
-                            self.id_hread.close()
-                        except:
-                            logging.info("except: iframe_Thread.id_hread.close {}".format(time.time()))
-                            print("Error frame_Thread.id_hread.close()")
-                    self.id_hread = None
-        else:
-            if not self.id_hread is None:  # сущ ли процесс
-                if self.id_hread.is_alive():
-                    self.id_hread.terminate()
-                if not self.id_hread.is_alive():
-                    try:
-                        self.id_hread.close()
-                    except:
-                        logging.info("except: iframe_Thread.id_hread.close {}".format(time.time()))
-                        print("Error iframe_Thread.id_hread.close())")
-                    self.id_hread = None
-
-        
-    def zeroing(self):# обнуление переменных
-
-        self.x_y_w_h_temp.set_() # обнулять для сброса задержки экрана
-        
-        self.return_Id_to_face.put(-1) # для сняия с потока инф(чтоб без матов(часть костыля #1))
-        self.time_temp1 = time.time() #начало сканирования 
-        self.frame_delay = 0 # задержка на пропажу выделения
-        self.x_y_w_h.set_() # зануляем #self.x = self.y = self.w = self.h = 0
-        #self.frame = None #переменная под фрейм с камеры
-        
-        self.flag_id_on = False # найден ли id
-        self.id_person = None # переменная под персонал
-        self.frame_delay_if = True # задержано ли выделение  
-        
-        
-        self.fase_RGB_200_200 = None # под скрин лица
-            
-        #self.frame_out = self.frame
-        #self.x_y_w_h_out.set_() #положение лица
-        #self.frame_delay_if_out = True #отсутствие задержки 
-        #self.id_person_out = None # id_person    
-
-        #self.fase_RGB_200_200_out = None  # под скрин лица
-        self.hread(True)
-
-    def frame_orientation(self, frame=None):  # ориентация кадра или фото
-        if_ = frame is None
-        if if_:
-            frame = self.frame
-
-        height, width = self.height_width_size(True, frame)
-        if height < width:
-            frame = cv2.rotate(frame, self.ROTATE_CLOCKWISE)
-            if not if_:
-                print("frame_orientation cv2.flip x")
-                frame = cv2.flip(frame, 0)  # ореентация камеры переворот вокруг оси x
-        return frame
-
-    def frame_image(self):  # получение кадра или фото
-        if not self.frame is None:  # если переменная под фрейм не пуста
-            del self.frame  # удаляем её
-            self.frame = None
-        if not self.If_Test_Foto:
-            self.ret, self.frame = self.cap.read()
-            self.frame_if = True
-            if not self.frame is None:
-                self.frame = cv2.flip(self.frame, 1)  # ореентация камеры переворот вокруг оси y
-
-                self.frame = self.frame_orientation()
-                # frame = frame = [:, 185:455]
-            else:
-                logging.error("except: frame_Thread.frame_image/ frame is None")
-                return -1
-        else:
-            self.frame = numpy.copy(self.image)
-        return 0
-
-    def faces_x_y(self):  # ф-я для поиска границ
-        x = y = w = h = 0
-        x1 = y1 = w1 = h1 = 0
-        if not self.frame is None:
-            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-            faces = face_detector.detectMultiScale(gray, 1.3, 5)
-            for (x1, y1, w1, h1) in faces:
-                x, y, w, h = x1, y1, w1, h1
-                break
-
-        return x, y, w, h
-
-    def height_width_size(self, if_=False, frame=None):  # размер кадра
-        # height, width = 626, 537 #зармеры кадра
-        if frame is None:
-            frame = self.frame
-        if if_:
-            height = 0
-            width = 0
-        else:
-            height = self.height
-            width = self.width
-        if not frame is None:
-            if height + width == 0:
-                height = numpy.size(frame, 0)
-                width = numpy.size(frame, 1)
-
-        return height, width
-
-    def min_w_h_size(self):  # размер минимальных границ для выделения
-        temp = 0
-        if self.height + self.width != 0:
-            d = 3  # КОЭФФИЦИЕНТ НА МИНИМАЛЬНУЮ ДЛИНУ РАСПОЗНАНИЯ
-            temp = round(numpy.max([self.height / d, self.width / d]), 0)
-
-        return temp
-
-    def Id_to_face(self, if_test_wimdovs=False):  # поиск по фото
-        self.id_person = -1
-        # print(self.qqq)
-        if not if_test_wimdovs:
-            self.id_person = processing_recognition.predict_freme(self.fase_RGB_200_200)
-        # if return_Id_to_face.get() == -1 :
-        self.return_Id_to_face.put(self.id_person)
+    #@staticmethod   
 
 
 class pin_object(object):  # работа с gbyfvb
@@ -827,449 +467,46 @@ class pin_Thread(threading.Thread):  # работа со пином
         self.pin_off()
         self.if_on = False
 
+"""
+def on_buzer(mode):
+    '''
+    РАбота с пещалкой
+    :param mode: True - ПРоходит  False - НЕ пройдет
 
-class teplo_Thread(threading.Thread):  # работа с температурами
+    :return:
+    '''
+    global p
+    print("mode {}".format(mode))
+    if mode:
+        p.start(0)
+        p.ChangeDutyCycle(50)
+        time.sleep(0.3)
+        p.ChangeDutyCycle(0)
+    else:
+        for _ in range(2):
+            p.ChangeDutyCycle(50)
+            time.sleep(1)
+            p.ChangeDutyCycle(0)
+            time.sleep(0.5)
 
-    def __init__(self, dataBase:BD):
-        super().__init__()
-        # настройка
-        
-        self.setName('teplo_Thread') #
-        self.start_event = threading.Event()
-        
-        self.dataBase = dataBase
-        self.daemon = True # для отключения потока при остановке программы
-        GPIO.setmode(GPIO.BCM) # для работы с GPIO
-        GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP) # подключение дачика растояния
-        self.teplovizor = amg88() # подключение верхнего тепловизора 
-        self.pirometr = pirometr()#MLX90614(SMBus(1)) # подключение нижнего тепловизора
-        #границы допустимого
-        self.___min___ = 0.0 #20
-        self.___max___ = 39.2
-        #\/попытки обработки 
-        
-         
-        self.out_last_tepl = 33.2
-        self.out_last_pir = 33.2
-        #с кофициэнтами 
-        self.threshold_pir_cof = 0
-        self.threshold_teplovizor_cof = 0
-        #по  прогнозам 1х  10 в бд
-        self.if_bd_10 = False
-        
-        
-        #/\попытки обработки 
 
-        # управление
-        self.time = 0.3  # шаг повторения по времени
-        self.if_active = False  # активация считывания с тепловизора
-        self.if_ran = False  # состояние Thread
-        # данные
-        self.temp_tepl_arr = None
-        self.temp_tepl_Raw = 0  # рабочая переменая для teplovizor
-        self.t_teplovizor = 0  # рабочая переменая для перещитаного teplovizor
-        self.tempPir = 0  # рабочая температура с руки pirometr
-        self.tempPir_ambient = 0# рабочая температура окружающей среды pirometr
-        self.inputPir = 1  # рабочая переменая наличия руки (дачик растояния) /0 - есть рука / 1 - нет руки
-        # темповые данные
-        self.next_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
-        self.next_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.next_tempPir = 0 # темповая температура с руки pirometr
-        self.next_tempPir_ambient = 0# темповая температура окружающей среды pirometr
-        self.next_inputPir = 1 # темповая переменая наличия руки (дачик растояния)
-        self.next_tepl_arr = None
-
-        #ok
-        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
-        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.ok_tempPir = 0 # темповая температура с руки pirometr
-        self.ok_tempPir_ambient = 0 # темповая температура окружающей среды pirometr
-        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния) 
-        
-        
-    def ___teplo___(self): 
-        '''
-        получает и возвращает данные с модумей
-        '''
-        temp_tepl_Raw = temp_tepl = tempPir = 0
-
-        inputPir = 1 
-        try:
-            temp_tepl_Raw, temp_tepl = self.teplovizor.getMaxTemp()
-        except:  # Queue.Empty
-            print("error: teplo_Thread.___teplo___ (tepl)")
-            pass
-            
-        inputPir, tempPir, tempPir_ambient = self.pirometr.get_()  
-        """
-        try:
-            inputPir  = GPIO.input(18) # ОТКЛЮЧЁН ДАЧИК РАСТОЯНИЯ!!!!!
-            tempPir = round(self.pirometr.get_object_1(), 1)
-            tempPir_ambient = round(self.pirometr.get_ambient(), 1)
-            # if GPIO.input(18) == False:#у нас есть отжатая кнопа?
-            #    tempPir = round(self.pirometr.get_object_1(),1)
-            #print(inputPir, "!!!!!")
-        except:  # Queue.Empty
-            print("error: teplo_Thread.___teplo___ (Pir)")
-            pass
-        # print("temp_tepl {} tempPir {} temp_tepl_Raw {}".format(temp_tepl, tempPir, temp_tepl_Raw))
-        """
-        
-        return temp_tepl_Raw, temp_tepl, tempPir,  tempPir_ambient, inputPir
-
-    def teplo_teplo(self):
-        '''
-        сохраняет данные с модумей
-        '''
-        self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_tempPir_ambient , self.next_inputPir= self.___teplo___()
-        self.next_tepl_arr = self.teplovizor.getreturnMaxrix() 
-
-    def next_(self,out_last_tepl = 33.2, out_last_pir = 33.2):
-        '''
-        переводит темповые переменные в рабочие
-        '''
-        """
-        if not self.if_active:
-            self.teplo_teplo()
-        """
-        self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir = self.if_ok(self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir,self.next_tempPir_ambient , self.next_inputPir) 
-        #self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.inputPir = self.next_temp_tepl_Raw, self.next_t_teplovizor, self.next_tempPir, self.next_inputPir 
-        
-        self.start_event.set()
-        '''
-        if not self.temp_tepl_arr is None:
-            del self.temp_tepl_arr
-        self.temp_tepl_arr = None
-
-        try:
-            self.temp_tepl_arr = numpy.copy(self.next_tepl_arr)
-        except:
-            print("Error teplo_Thread.next_ getMaxrix")
-            self.temp_tepl_arr = numpy.array([self.temp_tepl_Raw, self.temp_tepl_Raw])
-        
-        #self.temp_tepl_arr = numpy.copy(self.next_tepl_arr) #self.teplovizor.getreturnMaxrix() #numpy.array([self.temp_tepl_Raw,self.temp_tepl_Raw])    
-        data_time, self.threshold_pir_cof, self.threshold_teplovizor_cof = self.dataBase.get_calibration_threshold()
-        '''
-        
-        '''
-        self.out_last_tepl = out_last_tepl
-        self.out_last_pir = out_last_pir
-        '''
-        
-        '''
-        # бд 10 первых
-        self.if_bd_10, out_last_tepl, out_last_pir = dataBase.get_agv_10_calibration_threshold() 
-        if self.if_bd_10:
-            print("Калибровочные данные:", out_last_tepl, out_last_pir)                                                                                
-            self.out_last_tepl, self.out_last_pir = out_last_tepl, out_last_pir
-        '''
-
-    def teplo(self):
-        '''
-        возвращает рабочие переменные
-        '''
-        return self.temp_tepl_Raw, self.t_teplovizor, self.tempPir, self.tempPir_ambient, self.inputPir
-
-        
-    def zeroing(self):    
-        #ok
-        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
-        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.ok_tempPir = 0 # темповая переменая для pirometr
-        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния)  /0 - есть рука / 1 - нет руки
-       
-
-    def ___valid_None___(self, temp_tepl_Raw, tempPir):
-        '''
-        если данные пустые, то берёт данные из рабочих
-        '''
-        if tempPir is None: tempPir = self.tempPir
-        if temp_tepl_Raw is None: temp_tepl_Raw = self.temp_tepl_Raw
-        return temp_tepl_Raw, tempPir
-    """
-    def valid_min(self, temp_tepl_Raw=None, tempPir=None):
-        '''
-        ищем рабочие минимальные данные
-        '''
-        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-
-        if temp_tepl_Raw == 0 or tempPir == 0:
-            return 0
-        tepl = temp_tepl_Raw
-        if self.inputPir == 0:
-            tepl = round(numpy.min([tepl, tempPir]), 1)
-        return tepl
-
-    def valid_max(self, temp_tepl_Raw=None, tempPir=None):
-        '''
-        ищем рабочие максимальные данные
-        '''
-        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-
-        if temp_tepl_Raw == 0 or tempPir == 0:
-            return 0
-        tepl = temp_tepl_Raw
-
-        if self.inputPir == 0:
-            tepl= round(numpy.max([tepl, tempPir]), 1)
-        return tepl
-    """
-    def if_valid_min(self, temp_tepl_Raw=None, tempPir=None):
-        '''
-        вохвращает: входят ли рабочие минимальные данные в границы допустимого
-        '''
-        """
-        tepl = self.valid_min(temp_tepl_Raw, tempPir)
-
-        if self.___min___ <= tepl <= self.___max___:
-            return True
+def valid(tempPir, t_teplovizor):
+    '''
+    Решения о состоянии здоровья
+    :param tempPir:
+    :param t_teplovizor:
+    :return: текст сообщения
+    '''
+    if t_teplovizor >= 37.2 or tempPir >= 37.2:
+        GPIO.output(led_red_pin, GPIO.LOW)
+        if tempPir == -1:
+            return True, 'Обратитесь к врачу: {}'.format(t_teplovizor)
         else:
-            return False
-        """
-        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-
-        Raw = abs(temp_tepl_Raw - self.out_last_tepl) 
-        Pir = abs(tempPir - self.out_last_pir) 
-        #Raw = temp_tepl_Raw - self.out_last_tepl 
-        #Pir = tempPir - self.out_last_pir 
-        
-        #коффиц
-        """
-        #print(Raw,Pir)
-        #print(self.threshold_teplovizor_cof,self.threshold_pir_cof)
-        #print(Raw - self.threshold_teplovizor_cof,Pir - self.threshold_pir_cof)
-        #print("_____________")
-        
-        if_ = 3 <= abs (Raw - self.threshold_teplovizor_cof) and 3 <= abs (Pir - self.threshold_pir_cof)
-        #print("if_valid_min {}".format(if_))
-        return if_
-        """
-        # бд 10 первых
-        threshold_teplovizor_cof = 6 #-3 #нижние коффиц расхождения
-        threshold_pir_cof = 10 #-2 # нижние коффиц расхождения
-        if not self.if_bd_10: 
-            return True
+            return True, 'Обратитесь к врачу: {}: '.format(round(numpy.max([t_teplovizor, tempPir]), 1))
+    else:
+        GPIO.output(led_green_pin, GPIO.LOW)
+        if tempPir == -1:
+            return False, 'Все хорошо, проходите: {}'.format(t_teplovizor)
         else:
-            if_ = threshold_teplovizor_cof <= (Raw) and threshold_pir_cof <=(Pir)
-            """
-            print("temp_tepl_Raw {}   tempPir {}".format(temp_tepl_Raw, tempPir))
-            print("out_last_tepl {}   out_last_pir {}".format(self.out_last_tepl, self.out_last_pir))
-            print("Raw {}   threshold_pir_cof {}".format(Raw, Pir))
-            print("if_valid_min {}".format(if_))
-            print("________________")
-            """
-            return if_
-        
-        
-    def if_valid_max1(self, temp_tepl_Raw=None, tempPir=None):
-        '''
-        вохвращает: входят ли рабочие максимальные данные в границы допустимого
-        '''
-        '''
-        tepl = self.valid_max(temp_tepl_Raw, tempPir)
-        if self.___min___ <= tepl <= self.___max___:
-            return True
-        else:
-            return False
-        '''
-        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-        Raw = abs(temp_tepl_Raw - self.out_last_tepl) 
-        Pir = abs(tempPir - self.out_last_pir) 
-        #Raw = temp_tepl_Raw - self.out_last_tepl 
-        #Pir = tempPir - self.out_last_pir 
-        #коффиц
-        '''
-        print("Temperaturs Tepl:{} / Pir:{}".format(self.temp_tepl_Raw,self.tempPir))
-        print("the temperature of the environment Tepl:{} / Pir:{}".format(self.out_last_tepl,self.out_last_pir))
-        print("Coefficient Temperatur Tepl:{} / Pir:{}".format(Raw,Pir))
-        print("Coefficient BD Tepl:{} / Pir:{}".format(self.threshold_teplovizor_cof,self.threshold_pir_cof))
-        #print(Raw - self.threshold_teplovizor_cof,Pir - self.threshold_pir_cof) 
-        print("_____________") 
-        if_ = abs (Raw - self.threshold_teplovizor_cof) <= 6 and abs (Pir - self.threshold_pir_cof) <= 6
-        #print("if_valid_max {}".format(if_))
-        return if_ 
-        '''
-        # бд 10 первых
-        threshold_teplovizor_cof = 10 #3 #верхние коффиц расхождения
-        threshold_pir_cof = 10 #2 # верхние коффиц расхождения
-        
-        if not self.if_bd_10: 
-            print("Калибровка", temp_tepl_Raw, tempPir)                                                     
-            return True
-        else:
-            if_ = (Raw)<= threshold_teplovizor_cof and (Pir)<=threshold_pir_cof
-            print("Результат:", temp_tepl_Raw, tempPir, if_)                                                         
-            """
-            print("temp_tepl_Raw {}   tempPir {}".format(temp_tepl_Raw, tempPir))
-            print("out_last_tepl {}   out_last_pir {}".format(self.out_last_tepl, self.out_last_pir))
-            print("Raw {}   threshold_pir_cof {}".format(Raw, Pir))
-            print("if_valid_max {}".format(if_))
-            print("________________")
-            """
-            return if_
-    def Calibration(self, tempPir, inputPir):   
-            return tempPir * 0 if inputPir ==1 else 1
-            
-    def if_valid_max(self, temp_tepl_Raw=None, tempPir=None):    
-        temp_tepl_Raw, tempPir = self.___valid_None___(temp_tepl_Raw, tempPir)
-        tempPir_ambient = self.tempPir_ambient
-        if_ = self.Calibration(tempPir, self.inputPir)>0 and True
-        return if_
-        
-    def if_valid(self, temp_tepl_Raw=None, tempPir=None):
-        '''
-        вохвращает: входят ли рабочие данные в границы допустимого
-        '''
-
-        
-        #print( self.if_valid_max(tempPir, temp_tepl_Raw)  )
-        #print( self.if_valid_min(tempPir, temp_tepl_Raw)  )
-        #print(self.if_valid_max(tempPir, temp_tepl_Raw) and self.if_valid_min(tempPir, temp_tepl_Raw) )
-        
-        #if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) and self.if_valid_min(temp_tepl_Raw, tempPir ) 
-        if_ = self.if_valid_max(temp_tepl_Raw, tempPir ) #and True#self.if_valid_min(temp_tepl_Raw, tempPir ) 
-        # !?!?!?!? ЧТО ЭТО!???
-        #print("if_valid {}".format(if_))
-        return if_
-
-    def if_ok(self, temp_tepl_Raw,  t_teplovizor, tempPir , tempPir_ambient, inputPir ): 
-        '''
-        self.ok_temp_tepl_Raw = 0 # темповая  переменая для teplovizor ()
-        self.ok_t_teplovizor = 0 # темповая переменая для перещитаного teplovizor
-        self.ok_tempPir = 0 # темповая переменая для pirometr
-        self.ok_inputPir = 1 # темповая переменая наличия руки (дачик растояния) /0 - есть рука / 1 - нет руки
-        '''
-        
-        #if self.if_valid():
-        #self.ok_temp_tepl_Raw =
-        #if (self.if_valid(tempPir, temp_tepl_Raw) or not self.if_valid(self.ok_t_teplovizor, self.ok_tempPir)
-        if ((self.if_valid(temp_tepl_Raw, tempPir) and inputPir != 1) or (not self.if_valid(self.ok_temp_tepl_Raw, self.ok_tempPir )) and inputPir != 1) : 
-            self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir ,self.ok_tempPir_ambient, self.ok_inputPir = temp_tepl_Raw, t_teplovizor, tempPir, tempPir_ambient, inputPir
-        self.ok_inputPir = inputPir  
-        return self.ok_temp_tepl_Raw,  self.ok_t_teplovizor, self.ok_tempPir , self.ok_tempPir_ambient, self.ok_inputPir
-
-    
-    def valid_led(self,*led:pin_Thread, pin_time = 0.5):
-        '''
-        led: получаем поток pin_Thread, для управления пинами
-        pin_time: получаем время активности пина (стандартно 0.5 )
-        '''
-        if not led is None:
-            if self.if_valid():
-                all_led.pin_on_time(all_led.pin_namber("red"), pin_time)
-                all_led.pin_on_time(all_led.pin_namber("green"), pin_time)
-            else:
-                all_led.pin_on_time(all_led.pin_namber("red"), pin_time)
-
-    def valid_text(self):
-        '''
-        вохвращает: текст в зависимости от рабочих данных
-        '''
-        temt_str = ""
-        '''
-        if self.if_valid():  # если рабочие данные входят в минимальные и в максимальные границы
-            temt_str = 'Все хорошо,проходите: {}'.format(self.valid_min())  # берём меньшиее денные, дабы не пугать
-        elif not self.if_valid_max():  # если рабочие данные  НЕ входят в максимальные границы
-            temt_str = 'Обратитесь к врачу: {}'.format(self.valid_max())
-
-
-        #elif not self.if_valid_min():  # если рабочие данные  НЕ входят в минимальные границы
-        #    temt_str = 'Обратитесь к врачу: {}'.format(self.valid_min())
-        '''
-        return temt_str
-
-    def Str_teplo(self, tip=0):  # текст на  tepl
-        '''
-        вохвращает: тексты для состояний: тела , руки и общий текст (из рабочих данных)
-        '''
-        temp_text_telo = temp_text_Pir = temp_text_tepl = ""
-
-        if tip == 1 or tip == 0:
-            temp_text_telo = "Ваша температура тела{}".format(self.temp_tepl_Raw)
-            if tip == 1:
-                return temp_text_telo
-        if tip == 2 or tip == 0 :       
-            if self.inputPir != 1 :   
-                #temp_text_Pir = "Ваша температура по руке {}".format(self.tempPir)   
-                temp_text_Pir = "Получаем данные"
-
-            else:
-                temp_text_Pir = "Поднесите руку"
-            if tip == 2: return temp_text_Pir
-        if tip == 3 or tip == 0:
-            temp_sostoianie_tepl = self.valid_text()
-            if tip == 3 : return temp_sostoianie_tepl  
-        
-        if tip == 0 : return temp_text_telo, temp_text_Pir, temp_sostoianie_tepl
-        return ""
-    
-
-    def valid_var(self):
-        return self.if_valid()
-
-    def Stop_(self):
-        '''
-        остановка цикла потока
-        '''
-        self.if_active = False
-
-    def run(self):
-        print("Активация потока teplo_Thread ")
-        #t = time.time()
-        
-        while self.start_event.wait():
-
-        
-        #while self.if_active:
-            self.if_on = True
-            #if time.time() - t >= self.time:
-            #    t = time.time()
-            self.teplo_teplo()
-            
-        self.if_on = False
-
-
-class Open_Thread(threading.Thread):
-
-    def __init__(self):
-        super().__init__()
-        # self.daemon = True
-
-        self.if_active = False
-        self.if_on = False
-
-        self.if_Ok = False
-        self.time = 1
-
-    def Ok_Open(self):  ## ф-я на действие при сраб.
-        return 0
-
-    def If_Ok_Open(self):
-        if not self.if_Ok:
-            self.if_Ok = True
-
-    def on_of(self, iff=None):
-        if iff is None:
-            self.if_active = not self.if_active
-        else:
-            self.if_active = iff
-        return self.if_active
-
-    def Stop_(self):
-        '''
-        остановка цикла потока
-        '''
-        self.if_active = False
-
-    def run(self):
-        t = 0
-        self.if_active = True
-
-        while self.if_active:
-            self.if_on = True
-            if time.time() - t >= self.time:
-                t = time.time()
-                if self.if_Ok:
-                    self.if_Ok = False
-                    self.Ok_Open()
-        self.if_on = False
+            return False, 'Все хорошо, проходите: {}'.format(round(numpy.max([t_teplovizor, tempPir]), 1))
+"""

@@ -98,10 +98,8 @@ if __name__ == '__main__':
 
     test = MLX90614(SMBus(1))
     while 1:
-        print(test.get_object_1())
-        
+        test.get_object_1()
         time.sleep(0.1)
-        
 
 
 
