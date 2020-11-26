@@ -4,7 +4,7 @@
 import face_recognition
 import os
 import pickle
-#from app_thermometer.moduls.trening_models_cvm_knn import branch_4
+from app_thermometer.moduls.trening_models_cvm_knn import branch_4
 
 class processing_faceid:
 
