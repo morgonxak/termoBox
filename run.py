@@ -192,7 +192,7 @@ class cv2_out_object():
                                                     if_all_width_frame = True, Align = 1)
         self.i+=0.01
         
-        print("i " , self.i)
+        #print("i " , self.i)
         time.sleep(0.5)
         '''
         if self.inputPir == 1:   
@@ -336,9 +336,9 @@ class cv2_out_object():
                     #    cv2.rectangle(self.frame, (x-dist, y+dist), (x+text_width+dist, y-text_height-dist), color_rectangle, -1)
                     #cv2.putText(self.frame, text, (x, y), self.FONT_, fontScale, color_text, self.thickness, self.lineType)
                 
-                print( " ", x, y+baseline,self.width, y-(text_height+baseline))
+                #print( " ", x, y+baseline,self.width, y-(text_height+baseline))
                 #print( " ", x, y+baseline,x+text_width, y-(text_height+baseline))
-                print(text, " ", x, y)
+                #print(text, " ", x, y)
                 x1, y1, w1, h1 = x, y, text_width , text_height  #+ text_height# distance_lines 
                 
                 #print(x, y, text_width, text_height, baseline)
@@ -469,12 +469,15 @@ def pull_text(frame, text):
 
         
 def if_input_Pir(input_Pir):
-    if_ = (4<=input_Pir<=10) or input_Pir == 0
+    if_ = (4<=input_Pir<=10) # or input_Pir == 0
     #print("input_Pir = ", input_Pir, "//", if_)
     return if_ 
 
 def if_pir(input_Pir, Pir, Pir_ambient):
-    return False
+    if_ = Pir+(input_Pir-4)//3+4 <= 35
+    #print((Pir-(30.71- Pir_ambient))*0.0517+input_Pir*0.03493+34.1627)
+    #print("раст:",input_Pir, "пир:",Pir, " окр:",Pir_ambient, " щтв:",Pir+(input_Pir-4)//3+4)
+    return if_
 
 def out_text_end(frame, if_:bool):
     color_green = (28, 110, 21) #(0, 255, 0)
@@ -567,6 +570,7 @@ if_input = False
 if_save = True
 cv2_out = cv2_out_object()
 while True:
+
     
     ret, frame = cam.read()
     #print("qqq")
@@ -747,9 +751,11 @@ while True:
         cv2.imshow("window", frame)
         
         t2 = time.time()
-        print(t2 - t1)
+        #print(t2 - t1)
     key = cv2.waitKey(1)
     if key == ord('q'):
         recognition.mode_run = False
         cv2.destroyAllWindows()
+        
+        cam.release()
         break
